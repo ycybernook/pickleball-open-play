@@ -53,6 +53,8 @@
   .kiosk-brand h1{margin:0;font-size:44px;font-weight:800;line-height:1;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.5);}
   .kiosk-clock{font-family:var(--font-head);font-size:28px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums;}
   .kiosk-hero-actions{display:flex;gap:10px;align-items:center;}
+  .demo-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#241a03;background:var(--amber);padding:3px 9px;border-radius:20px;margin-top:6px;width:fit-content;}
+  .demo-badge.inline{margin-top:0;margin-left:6px;vertical-align:middle;font-size:9.5px;padding:2px 7px;}
 
   .kiosk{padding:26px 32px;display:flex;flex-direction:column;gap:26px;}
   .kiosk-section-title{font-size:26px;font-weight:700;margin:0 0 14px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:10px;}
@@ -724,6 +726,7 @@ function renderKioskPage(){
         <div class="kiosk-brand">
           <span class="kicker">Open Play</span>
           <h1>Pickleball Dashboard</h1>
+          <span class="demo-badge">Demo mode — data resets every 5 minutes</span>
         </div>
         <div class="kiosk-hero-actions">
           <span class="kiosk-clock" id="kioskClock">${new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit",second:"2-digit"})}</span>
@@ -769,7 +772,7 @@ function renderAppPage(){
   const header = `
   <header class="appbar">
     <div class="appbar-left">
-      <span class="brand">${icon("courts")} Pickleball Open Play</span>
+      <span class="brand">${icon("courts")} Pickleball Open Play <span class="demo-badge inline">Demo — resets every 5 min</span></span>
       <span id="saveIndicator" class="save-indicator${saveStatus==="saved"?" saved":""}">${saveStatus==="saving"?"Saving…":"Saved"}</span>
     </div>
     <nav class="tabs">
