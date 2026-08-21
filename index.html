@@ -15,6 +15,7 @@
     --text:#F2F7FB; --muted:#8FA3B8; --muted2:#6B8199;
     --ball:#E4FF3D; --ball-deep:#C7DE1F; --court-green:#18B368; --court-green-deep:#0E4A32;
     --amber:#F5A524; --amber-bg:#3A2C0E; --red:#EF4444; --red-bg:#3B1414;
+    --ready:#3B82F6; --ready-bg:#12233F;
     --gray-bg:#1A2634;
     --font-head:'Barlow Condensed',sans-serif; --font-body:'Barlow',-apple-system,BlinkMacSystemFont,sans-serif;
     --radius:14px;
@@ -63,6 +64,7 @@
   .kiosk-court.playing{background:var(--court-green-deep);border-color:var(--court-green);}
   .kiosk-court.ending{background:var(--amber-bg);border-color:var(--amber);}
   .kiosk-court.timeup{background:var(--red-bg);border-color:var(--red);animation:pulse 1s infinite;}
+  .kiosk-court.ready{background:var(--ready-bg);border-color:var(--ready);}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6);}50%{box-shadow:0 0 0 10px rgba(239,68,68,0);}}
   .kiosk-court-head{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;}
   .kiosk-court h3{margin:0;font-size:30px;font-weight:700;color:#fff;}
@@ -83,6 +85,14 @@
   .kiosk-queue-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;font-size:21px;font-weight:600;}
   .kiosk-queue-list li{background:var(--panel2);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
   .kiosk-queue-list li .pos{color:var(--ball);font-weight:800;margin-right:10px;font-family:var(--font-head);}
+
+  .rules-panel{background:var(--panel);border:2px solid var(--border);border-radius:20px;padding:24px;}
+  .rules-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
+  .rules-card{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:16px 20px;}
+  .rules-card h4{margin:0 0 10px;font-family:var(--font-head);font-size:19px;color:var(--ball);font-weight:700;}
+  .rules-card ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px;}
+  .rules-card li{font-size:15px;line-height:1.4;color:var(--text);}
+  .rules-card strong{color:var(--ball);}
 
   /* ---------- Auth ---------- */
   .auth-shell{min-height:100vh;background-image:linear-gradient(160deg,rgba(10,18,28,.92),rgba(10,18,28,.7) 55%,rgba(10,18,28,.95)),url('https://raw.githubusercontent.com/ycybernook/pickleball-open-play/main/hero.png');background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;padding:24px;}
@@ -122,6 +132,7 @@
   .court-card.playing{background:var(--court-green-deep);border-color:var(--court-green);}
   .court-card.ending{background:var(--amber-bg);border-color:var(--amber);}
   .court-card.timeup{animation:pulse 1s infinite;background:var(--red-bg);border-color:var(--red);}
+  .court-card.ready{background:var(--ready-bg);border-color:var(--ready);}
   .court-card.dragover{outline:2px dashed var(--ball);}
   .court-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
   .court-name{font-family:var(--font-head);font-weight:700;font-size:18px;}
@@ -129,10 +140,15 @@
   .status-pill.playing{background:var(--court-green);color:#04150c;}
   .status-pill.ending{background:var(--amber);color:#241a03;}
   .status-pill.open{background:var(--panel3);color:var(--muted);}
+  .status-pill.ready{background:var(--ready);color:#fff;}
+  .status-pill.timeup{background:var(--red);color:#fff;}
   .court-timer{font-family:var(--font-head);font-size:30px;font-weight:800;text-align:center;margin:6px 0;font-variant-numeric:tabular-nums;}
   .court-players{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;min-height:40px;}
   .player-chip{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:7px 9px;font-size:13.5px;display:flex;justify-content:space-between;gap:6px;cursor:grab;}
   .player-chip .rating{color:var(--muted);font-size:11px;}
+  .result-tag{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;font-size:10px;font-weight:800;margin-right:6px;vertical-align:middle;}
+  .result-tag.win{background:var(--court-green);color:#04150c;}
+  .result-tag.loss{background:var(--panel3);color:var(--muted);}
   .court-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
   .court-slot-empty{border:1px dashed var(--border);border-radius:8px;padding:7px;font-size:12px;color:var(--muted);text-align:center;}
 
@@ -181,7 +197,11 @@
   .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
   .modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:420px;width:100%;}
   .modal h3{margin-top:0;font-size:20px;}
-  .modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+  .modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;flex-wrap:wrap;}
+  .winner-pick-list{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+  .winner-pick-chip{display:flex;justify-content:space-between;align-items:center;width:100%;background:var(--panel2);border:1.5px solid var(--border);color:var(--text);padding:12px 14px;border-radius:10px;font-size:15px;font-weight:600;text-align:left;min-height:44px;}
+  .winner-pick-chip.selected{background:var(--court-green-deep);border-color:var(--court-green);}
+  .winner-pick-mark{color:var(--court-green);font-weight:800;font-size:16px;}
 
   .print-area{display:none;}
   @media print{
@@ -257,6 +277,9 @@ function migrateState(parsed){
     if(c.cameraUrl === undefined) c.cameraUrl = "";
     if(c.cameraEnabled === undefined) c.cameraEnabled = false;
   });
+  Object.values(parsed.players||{}).forEach(p=>{
+    if(p.lastResult === undefined) p.lastResult = null;
+  });
   return parsed;
 }
 
@@ -290,11 +313,18 @@ function fmtWait(ms){
 }
 
 function courtStatusClass(court, settings, now){
-  if(court.status !== "playing") return "open";
+  if(court.status !== "playing") return court.playerIds.length>0 ? "ready" : "open";
   const remain = court.endTime - now;
   if(remain <= 0) return "timeup";
   if(remain <= settings.endingSoonMinutes*60000) return "ending";
   return "playing";
+}
+function statusLabelFor(court, cls, kiosk){
+  if(cls==="open") return "Open";
+  if(cls==="ready") return "Ready to start";
+  if(cls==="timeup") return kiosk ? "TIME'S UP" : "Time up!";
+  if(cls==="ending") return "Ending soon";
+  return "In progress";
 }
 
 function pickNextGroup(queueIds, players, count, skillMode){
@@ -354,6 +384,7 @@ let appTab = "dashboard"; // dashboard | stats | admin
 let saveStatus = "saved";
 let confirmModal = null; // {title,message,confirmLabel}
 let pendingConfirm = null;
+let endGameModal = null; // {courtId, selected: [playerId,...]}
 let showPrintArea = false;
 let saveTimer = null;
 let dragData = null;
@@ -454,18 +485,17 @@ async function initCloudSync(){
 }
 
 function autoFill(draft){
+  // Auto-fills open courts from the queue, but never starts the clock —
+  // the court sits "ready" until the organizer manually starts it.
   const per = draft.settings.playersPerCourt;
   let changed = true, guard = 0;
   while(changed && guard < 20){
     changed = false; guard++;
     for(const court of draft.courts){
-      if(court.status === "open"){
+      if(court.status === "open" && court.playerIds.length === 0){
         const group = pickNextGroup(draft.queueIds, draft.players, per, draft.settings.skillMode);
         if(group){
           court.playerIds = group.chosen;
-          court.status = "playing";
-          court.startTime = Date.now();
-          court.endTime = Date.now() + draft.settings.gameMinutes*60000;
           draft.queueIds = group.rest;
           changed = true;
         }
@@ -486,7 +516,7 @@ function checkIn(name, rating){
   if(!name || !name.trim()) return;
   update(draft=>{
     const id = uid();
-    draft.players[id] = { id, name: name.trim(), rating: Number(rating)||0, arrivalTime: Date.now(), gamesPlayed: 0, checkedIn: true };
+    draft.players[id] = { id, name: name.trim(), rating: Number(rating)||0, arrivalTime: Date.now(), gamesPlayed: 0, checkedIn: true, lastResult: null };
     draft.queueIds.push(id);
   });
 }
@@ -498,17 +528,38 @@ function checkOut(playerId){
     if(!draft.outIds.includes(playerId)) draft.outIds.push(playerId);
   });
 }
-function endGame(courtId){
+// Ending a game does not immediately requeue players — organizer picks the
+// winners first (see endGameModal / finalizeEndGame) so the queue can honor
+// "winners to the front, grouped with other winners; losers grouped at the back".
+function finalizeEndGame(courtId, winnerIds){
   update(draft=>{
     const court = draft.courts.find(c=>c.id===courtId);
     if(!court || court.status!=="playing") return;
-    court.playerIds.forEach(pid=>{
-      if(draft.players[pid]){
-        draft.players[pid].gamesPlayed += 1;
-        if(draft.players[pid].checkedIn) draft.queueIds.push(pid);
-      }
-    });
+    const ids = court.playerIds.slice();
+    ids.forEach(pid=>{ if(draft.players[pid]) draft.players[pid].gamesPlayed += 1; });
     court.playerIds = []; court.status = "open"; court.startTime = null; court.endTime = null;
+
+    if(!winnerIds){
+      ids.forEach(pid=>{
+        if(!draft.players[pid]) return;
+        draft.players[pid].lastResult = null;
+        if(draft.players[pid].checkedIn) draft.queueIds.push(pid);
+      });
+      return;
+    }
+
+    const winners = ids.filter(id=>winnerIds.includes(id) && draft.players[id]);
+    const losers = ids.filter(id=>!winnerIds.includes(id) && draft.players[id]);
+    winners.forEach(pid=>{ draft.players[pid].lastResult = "winner"; });
+    losers.forEach(pid=>{ draft.players[pid].lastResult = "loser"; });
+
+    const winnersToQueue = winners.filter(pid=>draft.players[pid].checkedIn);
+    let frontIdx = 0;
+    while(frontIdx < draft.queueIds.length && draft.players[draft.queueIds[frontIdx]] && draft.players[draft.queueIds[frontIdx]].lastResult === "winner") frontIdx++;
+    draft.queueIds.splice(frontIdx, 0, ...winnersToQueue);
+
+    const losersToQueue = losers.filter(pid=>draft.players[pid].checkedIn);
+    draft.queueIds.push(...losersToQueue);
   });
 }
 function openCourtManually(courtId){
@@ -684,6 +735,7 @@ function render(){
   else if(view === "login") html = renderLoginPage();
   else html = renderAppPage();
   html += renderConfirmModal();
+  html += renderEndGameModal();
   root.innerHTML = html;
   printArea.innerHTML = showPrintArea ? renderPrintArea() : "";
   tickTimers();
@@ -696,7 +748,7 @@ function renderKioskPage(){
   const courtsHtml = state.courts.map(court=>{
     const cls = courtStatusClass(court, state.settings, now);
     const remain = court.status==="playing" ? court.endTime - now : null;
-    const statusLabel = court.status==="open" ? "Open" : cls==="timeup" ? "TIME'S UP" : cls==="ending" ? "Ending soon" : "In progress";
+    const statusLabel = statusLabelFor(court, cls, true);
     const hasCamera = court.cameraEnabled && court.cameraUrl && court.cameraUrl.trim();
     const playersHtml = court.playerIds.length>0 ? `<ul class="kiosk-players">${court.playerIds.map(pid=>{
         const p = state.players[pid]; if(!p) return "";
@@ -743,8 +795,36 @@ function renderKioskPage(){
         <h2 class="kiosk-section-title" style="margin-bottom:12px;">Waitlist (${queuedPlayers.length})</h2>
         ${queueHtml}
       </section>
+      ${renderRulesPanel()}
     </div>
   </div>`;
+}
+
+function renderRulesPanel(){
+  return `
+  <section class="rules-panel">
+    <h2 class="kiosk-section-title" style="margin-bottom:12px;">${icon("trophy","lg")} Quick Rules & How the Queue Works</h2>
+    <div class="rules-grid">
+      <div class="rules-card">
+        <h4>Serving & Play</h4>
+        <ul>
+          <li>Serve underhand, diagonally, below the waist</li>
+          <li>Double bounce: ball must bounce once on each side before volleys</li>
+          <li>No volleying inside the kitchen (7&nbsp;ft non-volley zone)</li>
+          <li>Games to 11, win by 2 — only the serving side scores</li>
+        </ul>
+      </div>
+      <div class="rules-card">
+        <h4>How rotation works here</h4>
+        <ul>
+          <li>When a court finishes, the organizer records the winners</li>
+          <li>Winners go to the <strong>front</strong> of the waitlist, together</li>
+          <li>Losers are grouped at the <strong>back</strong> of the waitlist</li>
+          <li>An open court fills automatically, but the organizer always starts the clock manually</li>
+        </ul>
+      </div>
+    </div>
+  </section>`;
 }
 
 function renderLoginPage(){
@@ -807,7 +887,7 @@ function renderDashboardTab(){
     queuedPlayers.map((p,idx)=>`
       <li class="queue-item" draggable="true" data-drag-type="queue" data-player="${p.id}" data-drop-queue-index="${idx}">
         <span class="pos">${idx+1}</span>
-        <span class="name">${esc(p.name)}</span>
+        <span class="name">${p.lastResult==="winner" ? `<span class="result-tag win">W</span>` : p.lastResult==="loser" ? `<span class="result-tag loss">L</span>` : ""}${esc(p.name)}</span>
         <span class="rating">${p.rating.toFixed(1)}</span>
         <span class="wait" data-wait-for="${p.id}" data-arrival="${p.arrivalTime}">waiting ${fmtWait(now-p.arrivalTime)}</span>
       </li>`).join("");
@@ -869,13 +949,13 @@ function renderDashboardTab(){
 function renderCourtCard(court, now){
   const cls = courtStatusClass(court, state.settings, now);
   const remain = court.status==="playing" ? court.endTime - now : null;
-  const pillLabel = court.status==="open" ? "Open" : cls==="timeup" ? "Time up!" : cls==="ending" ? "Ending soon" : "In progress";
-  const pillCls = court.status==="open" ? "open" : (cls==="playing" ? "playing" : "ending");
+  const pillLabel = statusLabelFor(court, cls, false);
   const playersHtml = court.playerIds.map(pid=>{
     const p = state.players[pid];
     if(!p) return "";
+    const resultTag = p.lastResult==="winner" ? `<span class="result-tag win">W</span>` : p.lastResult==="loser" ? `<span class="result-tag loss">L</span>` : "";
     return `<li class="player-chip" draggable="true" data-drag-type="court" data-court="${court.id}" data-player="${p.id}">
-      <span>${esc(p.name)}</span><span class="rating">${p.rating.toFixed(1)}</span>
+      <span>${resultTag}${esc(p.name)}</span><span class="rating">${p.rating.toFixed(1)}</span>
     </li>`;
   }).join("");
   const emptySlots = Math.max(0, state.settings.playersPerCourt - court.playerIds.length);
@@ -885,14 +965,14 @@ function renderCourtCard(court, now){
   <div class="court-card ${cls}" data-court-card="${court.id}" data-drop-court="${court.id}">
     <div class="court-head">
       <span class="court-name">${esc(court.label)}</span>
-      <span class="status-pill ${pillCls}" data-court-pill="${court.id}">${pillLabel}</span>
+      <span class="status-pill ${cls}" data-court-pill="${court.id}">${pillLabel}</span>
     </div>
     ${court.status==="playing" ? `<div class="court-timer" data-timer-for="${court.id}" data-end="${court.endTime}">${fmtClock(remain)}</div>` : ""}
     <ul class="court-players">${playersHtml}${emptyHtml}</ul>
     <div class="court-actions">
       ${court.status==="playing"
         ? `<button class="btn small" data-action="end-game" data-court="${court.id}">End Game</button>`
-        : `<button class="btn small" ${court.playerIds.length===0?"disabled":""} data-action="start-game" data-court="${court.id}">Start Game</button>`}
+        : `<button class="btn small ${court.playerIds.length>0?"primary":""}" ${court.playerIds.length===0?"disabled":""} data-action="start-game" data-court="${court.id}">Start Game</button>`}
       ${court.playerIds.length>0 ? `<button class="btn small" data-action="open-court" data-court="${court.id}">Clear</button>` : ""}
     </div>
     <div class="camera-config">
@@ -1002,6 +1082,36 @@ function renderConfirmModal(){
   </div>`;
 }
 
+function renderEndGameModal(){
+  if(!endGameModal) return "";
+  const court = state.courts.find(c=>c.id===endGameModal.courtId);
+  if(!court){ return ""; }
+  const need = Math.floor(state.settings.playersPerCourt/2);
+  const players = court.playerIds.map(pid=>state.players[pid]).filter(Boolean);
+  return `
+  <div class="modal-backdrop" data-action="cancel-end-game">
+    <div class="modal">
+      <h3>Who won on ${esc(court.label)}?</h3>
+      <p style="color:var(--muted);font-size:14px;">Tap the ${need} winner${need===1?"":"s"}. Winners go to the front of the queue; the rest are grouped at the back.</p>
+      <div class="winner-pick-list">
+        ${players.map(p=>{
+          const isSelected = endGameModal.selected.includes(p.id);
+          return `<button type="button" class="winner-pick-chip${isSelected?" selected":""}" data-action="toggle-winner" data-player="${p.id}">
+            <span>${esc(p.name)}</span>
+            <span class="winner-pick-mark">${isSelected ? "&#10003;" : ""}</span>
+          </button>`;
+        }).join("")}
+      </div>
+      <p style="color:var(--muted);font-size:12.5px;margin:2px 0 0;">${endGameModal.selected.length} of ${need} selected</p>
+      <div class="actions">
+        <button class="btn link" data-action="skip-end-game">Skip (no winner)</button>
+        <button class="btn" data-action="cancel-end-game">Cancel</button>
+        <button class="btn primary" data-action="confirm-end-game" ${endGameModal.selected.length!==need?"disabled":""}>Confirm</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderPrintArea(){
   const allPlayersArr = Object.values(state.players).sort((a,b)=>b.gamesPlayed-a.gamesPlayed || a.name.localeCompare(b.name));
   const totalGames = allPlayersArr.reduce((s,p)=>s+p.gamesPlayed,0);
@@ -1036,14 +1146,14 @@ function tickTimers(){
   state.courts.forEach(court=>{
     const cls = courtStatusClass(court, state.settings, now);
     document.querySelectorAll(`[data-court-card="${court.id}"]`).forEach(el=>{
-      el.classList.remove("open","playing","ending","timeup");
+      el.classList.remove("open","ready","playing","ending","timeup");
       el.classList.add(cls);
     });
     document.querySelectorAll(`[data-court-pill="${court.id}"]`).forEach(el=>{
-      const label = court.status==="open" ? "Open" : cls==="timeup" ? (el.classList.contains("kiosk-status-pill")?"TIME'S UP":"Time up!") : cls==="ending" ? "Ending soon" : "In progress";
-      el.textContent = label;
-      el.classList.remove("open","playing","ending");
-      el.classList.add(court.status==="open"?"open":(cls==="playing"?"playing":"ending"));
+      const isKiosk = el.classList.contains("kiosk-status-pill");
+      el.textContent = statusLabelFor(court, cls, isKiosk);
+      el.classList.remove("open","ready","playing","ending","timeup");
+      el.classList.add(cls);
     });
     if(court.status==="playing" && court.endTime <= now){
       if(!alertedCourts.has(court.id)){ alertedCourts.add(court.id); beep(); }
@@ -1129,7 +1239,40 @@ document.addEventListener("click", (e)=>{
         break;
       }
       case "check-out": checkOut(actionEl.getAttribute("data-player")); break;
-      case "end-game": endGame(actionEl.getAttribute("data-court")); break;
+      case "end-game": {
+        const courtId = actionEl.getAttribute("data-court");
+        endGameModal = { courtId, selected: [] };
+        render();
+        break;
+      }
+      case "toggle-winner": {
+        if(!endGameModal) break;
+        const pid = actionEl.getAttribute("data-player");
+        const court = state.courts.find(c=>c.id===endGameModal.courtId);
+        const need = Math.floor(state.settings.playersPerCourt/2);
+        const idx = endGameModal.selected.indexOf(pid);
+        if(idx>=0) endGameModal.selected.splice(idx,1);
+        else if(endGameModal.selected.length < need) endGameModal.selected.push(pid);
+        render();
+        break;
+      }
+      case "confirm-end-game": {
+        if(!endGameModal) break;
+        const need = Math.floor(state.settings.playersPerCourt/2);
+        if(endGameModal.selected.length !== need) break;
+        const { courtId, selected } = endGameModal;
+        endGameModal = null;
+        finalizeEndGame(courtId, selected);
+        break;
+      }
+      case "skip-end-game": {
+        if(!endGameModal) break;
+        const courtId = endGameModal.courtId;
+        endGameModal = null;
+        finalizeEndGame(courtId, null);
+        break;
+      }
+      case "cancel-end-game": endGameModal = null; render(); break;
       case "open-court": openCourtManually(actionEl.getAttribute("data-court")); break;
       case "start-game": startCourtManually(actionEl.getAttribute("data-court")); break;
       case "skill-mode": updateSettings({skillMode: actionEl.getAttribute("data-mode")}); break;
@@ -1137,7 +1280,7 @@ document.addEventListener("click", (e)=>{
     return;
   }
   if(t.classList && t.classList.contains("modal-backdrop")){
-    confirmModal = null; pendingConfirm = null; render();
+    confirmModal = null; pendingConfirm = null; endGameModal = null; render();
   }
 });
 
