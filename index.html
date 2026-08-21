@@ -73,13 +73,18 @@
   .kiosk-players{list-style:none;margin:6px 0 0;padding:0;font-size:22px;font-weight:600;display:flex;flex-direction:column;gap:6px;position:relative;z-index:2;color:#fff;}
   .kiosk-empty{font-size:19px;color:var(--muted);text-align:center;padding:26px 0;}
   .camera-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0;z-index:0;}
-  .camera-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15) 0%,rgba(0,0,0,.05) 40%,rgba(0,0,0,.75) 100%);z-index:1;}
-  .live-badge{position:absolute;top:16px;right:16px;background:var(--red);color:#fff;font-size:11px;font-weight:800;letter-spacing:.08em;padding:4px 9px;border-radius:6px;z-index:2;display:flex;align-items:center;gap:5px;}
+  .live-badge{background:var(--red);color:#fff;font-size:11px;font-weight:800;letter-spacing:.08em;padding:4px 9px;border-radius:6px;display:flex;align-items:center;gap:5px;flex:none;}
   .live-dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:blink 1.4s infinite;}
   @keyframes blink{0%,100%{opacity:1;}50%{opacity:.25;}}
-  .kiosk-court.has-camera .kiosk-players{position:absolute;bottom:16px;left:20px;right:20px;font-size:18px;}
-  .kiosk-court.has-camera .kiosk-timer{position:absolute;top:56px;left:0;right:0;font-size:44px;}
-  .kiosk-court.has-camera .kiosk-status-pill{}
+  /* Camera-enabled kiosk court: LIVE feed fills the top ~3/4, player names sit in a solid strip below (never overlapping the video) */
+  .kiosk-court.has-camera{padding:0;display:flex;flex-direction:column;height:380px;overflow:hidden;}
+  .camera-live-wrap{position:relative;flex:3 1 0%;min-height:0;background:#000;}
+  .camera-top-overlay{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:14px;z-index:2;}
+  .camera-timer{position:absolute;bottom:10px;left:0;right:0;z-index:2;font-size:34px;margin:0;text-shadow:0 2px 10px rgba(0,0,0,.85);}
+  .camera-footer{flex:1 1 0%;min-height:0;background:var(--panel2);padding:10px 20px;display:flex;flex-direction:column;justify-content:center;gap:5px;border-top:2px solid var(--border-bright);overflow:hidden;}
+  .camera-footer-name{font-family:var(--font-head);font-weight:700;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .camera-footer .kiosk-players{flex-direction:row;flex-wrap:wrap;gap:6px 18px;font-size:18px;margin:0;}
+  .kiosk-empty.small{font-size:14px;padding:0;}
 
   .kiosk-queue{background:var(--panel);border-radius:20px;padding:24px;border:2px solid var(--border);}
   .kiosk-queue-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;font-size:21px;font-weight:600;}
@@ -179,6 +184,8 @@
   table.roster{width:100%;border-collapse:collapse;font-size:13.5px;}
   table.roster th,table.roster td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
   table.roster th{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
+  table.roster td.col-win{color:var(--court-green);font-weight:700;}
+  table.roster td.col-loss{color:var(--muted);font-weight:700;}
   .badge{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--panel3);color:var(--muted);font-weight:700;}
   .badge.court{background:var(--court-green);color:#04150c;}
   .badge.queue{background:var(--ball);color:#111;}
@@ -189,6 +196,8 @@
   .stat-num{display:block;font-family:var(--font-head);font-size:38px;font-weight:800;color:var(--ball);}
   .stat-label{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
   .mvp-card{display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,var(--court-green-deep),var(--panel2));border:1px solid var(--court-green);border-radius:14px;padding:16px 18px;margin-bottom:18px;color:#fff;}
+  .mvp-card.win{background:linear-gradient(90deg,var(--ready-bg),var(--panel2));border-color:var(--ready);}
+  .mvp-card.win .mvp-games{color:var(--ready);}
   .mvp-card .icon{color:var(--ball);}
   .mvp-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;}
   .mvp-name{font-family:var(--font-head);font-size:22px;font-weight:700;}
@@ -280,6 +289,8 @@ function migrateState(parsed){
   Object.values(parsed.players||{}).forEach(p=>{
     if(p.lastResult === undefined) p.lastResult = null;
     if(p.queuedSince === undefined) p.queuedSince = p.arrivalTime;
+    if(p.wins === undefined) p.wins = 0;
+    if(p.losses === undefined) p.losses = 0;
   });
   return parsed;
 }
@@ -349,10 +360,17 @@ function parseYouTubeId(url){
   const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|live\/|embed\/))([\w-]{11})/);
   return m ? m[1] : null;
 }
+function isFacebookUrl(url){
+  return /^https?:\/\/(www\.)?(facebook\.com|fb\.watch)\//i.test(url);
+}
 function renderCameraEmbed(url){
   if(!url) return "";
   const yt = parseYouTubeId(url);
   if(yt) return `<iframe class="camera-frame" src="https://www.youtube.com/embed/${yt}?autoplay=1&mute=1&controls=0&loop=1&playlist=${yt}" allow="autoplay; encrypted-media" allowfullscreen frameborder="0"></iframe>`;
+  if(isFacebookUrl(url)){
+    const href = encodeURIComponent(url);
+    return `<iframe class="camera-frame" src="https://www.facebook.com/plugins/video.php?href=${href}&show_text=false&autoplay=true&mute=true" allow="autoplay; encrypted-media" allowfullscreen frameborder="0"></iframe>`;
+  }
   if(/\.m3u8(\?|$)/i.test(url)) return `<video class="camera-frame" data-hls-src="${esc(url)}" autoplay muted playsinline loop></video>`;
   if(/\.(mp4|webm|ogv)(\?|$)/i.test(url)) return `<video class="camera-frame" src="${esc(url)}" autoplay muted playsinline loop></video>`;
   return `<img class="camera-frame" src="${esc(url)}" alt="Court camera feed" />`;
@@ -518,7 +536,7 @@ function checkIn(name, rating){
   update(draft=>{
     const id = uid();
     const now = Date.now();
-    draft.players[id] = { id, name: name.trim(), rating: Number(rating)||0, arrivalTime: now, queuedSince: now, gamesPlayed: 0, checkedIn: true, lastResult: null };
+    draft.players[id] = { id, name: name.trim(), rating: Number(rating)||0, arrivalTime: now, queuedSince: now, gamesPlayed: 0, wins: 0, losses: 0, checkedIn: true, lastResult: null };
     draft.queueIds.push(id);
   });
 }
@@ -559,8 +577,8 @@ function finalizeEndGame(courtId, winnerIds){
 
     const winners = ids.filter(id=>winnerIds.includes(id) && draft.players[id]);
     const losers = ids.filter(id=>!winnerIds.includes(id) && draft.players[id]);
-    winners.forEach(pid=>{ draft.players[pid].lastResult = "winner"; draft.players[pid].queuedSince = now; });
-    losers.forEach(pid=>{ draft.players[pid].lastResult = "loser"; draft.players[pid].queuedSince = now; });
+    winners.forEach(pid=>{ draft.players[pid].lastResult = "winner"; draft.players[pid].queuedSince = now; draft.players[pid].wins += 1; });
+    losers.forEach(pid=>{ draft.players[pid].lastResult = "loser"; draft.players[pid].queuedSince = now; draft.players[pid].losses += 1; });
 
     const winnersToQueue = winners.filter(pid=>draft.players[pid].checkedIn);
     const losersToQueue = losers.filter(pid=>draft.players[pid].checkedIn);
@@ -644,10 +662,10 @@ function moveToCourt(playerId, fromType, fromCourtId, targetCourtId){
 
 function exportCSV(){
   const allPlayersArr = Object.values(state.players).sort((a,b)=>b.gamesPlayed-a.gamesPlayed || a.name.localeCompare(b.name));
-  const rows = [["Name","Rating","Arrival Time","Games Played","Status"]];
+  const rows = [["Name","Rating","Arrival Time","Games Played","Wins","Losses","Status"]];
   allPlayersArr.forEach(p=>{
     const status = p.checkedIn ? (state.courts.some(c=>c.playerIds.includes(p.id)) ? "On Court" : "Waiting") : "Checked Out";
-    rows.push([p.name, p.rating, fmtTime(p.arrivalTime), p.gamesPlayed, status]);
+    rows.push([p.name, p.rating, fmtTime(p.arrivalTime), p.gamesPlayed, p.wins, p.losses, status]);
   });
   const totalGamesPlayed = allPlayersArr.reduce((s,p)=>s+p.gamesPlayed,0);
   rows.push([]);
@@ -766,9 +784,25 @@ function renderKioskPage(){
     const playersHtml = court.playerIds.length>0 ? `<ul class="kiosk-players">${court.playerIds.map(pid=>{
         const p = state.players[pid]; if(!p) return "";
         return `<li>${esc(p.name)}</li>`;
-      }).join("")}</ul>` : (hasCamera ? "" : `<div class="kiosk-empty">Court open</div>`);
-    return `<div class="kiosk-court ${cls}${hasCamera?" has-camera":""}" data-court-card="${court.id}">
-      ${hasCamera ? renderCameraEmbed(court.cameraUrl.trim()) + '<div class="camera-scrim"></div><div class="live-badge"><span class="live-dot"></span>LIVE</div>' : ""}
+      }).join("")}</ul>` : (hasCamera ? `<div class="kiosk-empty small">Court open</div>` : `<div class="kiosk-empty">Court open</div>`);
+
+    if(hasCamera){
+      return `<div class="kiosk-court ${cls} has-camera" data-court-card="${court.id}">
+        <div class="camera-live-wrap">
+          ${renderCameraEmbed(court.cameraUrl.trim())}
+          <div class="camera-top-overlay">
+            <span class="kiosk-status-pill" data-court-pill="${court.id}">${statusLabel}</span>
+            <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+          </div>
+          ${court.status==="playing" ? `<div class="kiosk-timer camera-timer" data-timer-for="${court.id}" data-end="${court.endTime}">${fmtClock(remain)}</div>` : ""}
+        </div>
+        <div class="camera-footer">
+          <div class="camera-footer-name">${esc(court.label)}</div>
+          ${playersHtml}
+        </div>
+      </div>`;
+    }
+    return `<div class="kiosk-court ${cls}" data-court-card="${court.id}">
       <div class="kiosk-court-head">
         <h3>${esc(court.label)}</h3>
         <span class="kiosk-status-pill" data-court-pill="${court.id}">${statusLabel}</span>
@@ -992,7 +1026,7 @@ function renderCourtCard(court, now){
       <label class="camera-toggle">
         <input type="checkbox" data-camera-enabled="${court.id}" ${court.cameraEnabled?"checked":""} /> ${icon("camera")} Camera feed
       </label>
-      ${court.cameraEnabled ? `<input type="text" placeholder="YouTube live / .m3u8 / .mp4 / MJPEG URL" value="${esc(court.cameraUrl||"")}" data-camera-url="${court.id}" />` : ""}
+      ${court.cameraEnabled ? `<input type="text" placeholder="Facebook Live / YouTube Live / .m3u8 / .mp4 / MJPEG URL" value="${esc(court.cameraUrl||"")}" data-camera-url="${court.id}" />` : ""}
     </div>
   </div>`;
 }
@@ -1002,7 +1036,7 @@ function renderRosterTable(allPlayersArr){
   return `
     <div style="max-height:420px;overflow-y:auto;">
     <table class="roster">
-      <thead><tr><th>#</th><th>Name</th><th>Rating</th><th>Arrival</th><th>Games</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>#</th><th>Name</th><th>Rating</th><th>Arrival</th><th>Games</th><th>W</th><th>L</th><th>Status</th><th></th></tr></thead>
       <tbody>
         ${allPlayersArr.map((p,i)=>{
           const onCourt = state.courts.find(c=>c.playerIds.includes(p.id));
@@ -1015,6 +1049,7 @@ function renderRosterTable(allPlayersArr){
           return `<tr>
             <td>${i+1}</td>
             <td>${esc(p.name)}</td><td>${p.rating.toFixed(1)}</td><td>${fmtTime(p.arrivalTime)}</td><td>${p.gamesPlayed}</td>
+            <td class="col-win">${p.wins}</td><td class="col-loss">${p.losses}</td>
             <td>${statusHtml}</td>
             <td>${p.checkedIn ? `<button class="btn small" data-action="check-out" data-player="${p.id}">Check out</button>` : ""}</td>
           </tr>`;
@@ -1030,6 +1065,7 @@ function renderStatsTab(){
   const totalGames = allPlayersArr.reduce((s,p)=>s+p.gamesPlayed,0);
   const activeCourts = state.courts.filter(c=>c.status==="playing").length;
   const mvp = allPlayersArr[0];
+  const topWinner = [...allPlayersArr].sort((a,b)=>b.wins-a.wins || b.gamesPlayed-a.gamesPlayed)[0];
   return `
     <div class="panel">
       <h2>${icon("chart")} Session Stats</h2>
@@ -1043,7 +1079,13 @@ function renderStatsTab(){
       <div class="mvp-card">
         ${icon("trophy","lg")}
         <div><div class="mvp-label">Most Active Player</div><div class="mvp-name">${esc(mvp.name)}</div></div>
-        <div class="mvp-games">${mvp.gamesPlayed} games</div>
+        <div class="mvp-games">${mvp.gamesPlayed} games (${mvp.wins}W-${mvp.losses}L)</div>
+      </div>` : ""}
+      ${topWinner && topWinner.wins>0 ? `
+      <div class="mvp-card win">
+        ${icon("trophy","lg")}
+        <div><div class="mvp-label">Most Wins</div><div class="mvp-name">${esc(topWinner.name)}</div></div>
+        <div class="mvp-games">${topWinner.wins}W-${topWinner.losses}L</div>
       </div>` : ""}
       <h2 style="margin-top:6px;">Player Stat Sheet</h2>
       ${renderRosterTable(allPlayersArr)}
@@ -1138,8 +1180,8 @@ function renderPrintArea(){
     <ol>${mostActive.map(p=>`<li>${esc(p.name)} — ${p.gamesPlayed} games</li>`).join("")}</ol>
     <h3>Full Roster</h3>
     <table>
-      <thead><tr><th>Name</th><th>Rating</th><th>Arrival</th><th>Games Played</th></tr></thead>
-      <tbody>${allPlayersArr.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.rating.toFixed(1)}</td><td>${fmtTime(p.arrivalTime)}</td><td>${p.gamesPlayed}</td></tr>`).join("")}</tbody>
+      <thead><tr><th>Name</th><th>Rating</th><th>Arrival</th><th>Games Played</th><th>Wins</th><th>Losses</th></tr></thead>
+      <tbody>${allPlayersArr.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.rating.toFixed(1)}</td><td>${fmtTime(p.arrivalTime)}</td><td>${p.gamesPlayed}</td><td>${p.wins}</td><td>${p.losses}</td></tr>`).join("")}</tbody>
     </table>`;
 }
 
