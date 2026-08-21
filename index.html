@@ -531,13 +531,13 @@ function checkOut(playerId){
   });
 }
 // Ending a game does not immediately requeue players — organizer picks the
-// winners first (see endGameModal / finalizeEndGame) so the queue can honor
-// "winners to the front, grouped with other winners; losers grouped at the back".
-// "Winners stay on the court" model: winners never leave their court or
-// touch the queue. Losers go to the back of the waitlist, and the vacated
-// slots are immediately topped up from the front of the waitlist (fairness
-// or skill-balance, same as autoFill) -- but the court still needs a manual
-// Start, it never begins the clock on its own.
+// winners first (see endGameModal / finalizeEndGame).
+// Waitlist time is the priority: whoever's been waiting longest (checked in
+// or returned to the queue earliest) fills the next open court first.
+// Winners and losers both leave their court and go to the back of that same
+// single queue -- winners just ahead of losers within their own batch -- so
+// if the plain waitlist can't fully supply an open court, it naturally
+// blends in with whichever finished group has been sitting longest.
 function finalizeEndGame(courtId, winnerIds){
   update(draft=>{
     const court = draft.courts.find(c=>c.id===courtId);
@@ -545,10 +545,9 @@ function finalizeEndGame(courtId, winnerIds){
     const ids = court.playerIds.slice();
     const now = Date.now();
     ids.forEach(pid=>{ if(draft.players[pid]) draft.players[pid].gamesPlayed += 1; });
-    court.status = "open"; court.startTime = null; court.endTime = null;
+    court.playerIds = []; court.status = "open"; court.startTime = null; court.endTime = null;
 
     if(!winnerIds){
-      court.playerIds = [];
       ids.forEach(pid=>{
         if(!draft.players[pid]) return;
         draft.players[pid].lastResult = null;
@@ -560,25 +559,12 @@ function finalizeEndGame(courtId, winnerIds){
 
     const winners = ids.filter(id=>winnerIds.includes(id) && draft.players[id]);
     const losers = ids.filter(id=>!winnerIds.includes(id) && draft.players[id]);
-    winners.forEach(pid=>{ draft.players[pid].lastResult = "winner"; });
-    losers.forEach(pid=>{
-      draft.players[pid].lastResult = "loser";
-      draft.players[pid].queuedSince = now;
-    });
+    winners.forEach(pid=>{ draft.players[pid].lastResult = "winner"; draft.players[pid].queuedSince = now; });
+    losers.forEach(pid=>{ draft.players[pid].lastResult = "loser"; draft.players[pid].queuedSince = now; });
 
-    court.playerIds = winners.slice();
-
+    const winnersToQueue = winners.filter(pid=>draft.players[pid].checkedIn);
     const losersToQueue = losers.filter(pid=>draft.players[pid].checkedIn);
-    draft.queueIds.push(...losersToQueue);
-
-    const openSlots = draft.settings.playersPerCourt - court.playerIds.length;
-    if(openSlots > 0){
-      const group = pickNextGroup(draft.queueIds, draft.players, openSlots, draft.settings.skillMode);
-      if(group){
-        court.playerIds.push(...group.chosen);
-        draft.queueIds = group.rest;
-      }
-    }
+    draft.queueIds.push(...winnersToQueue, ...losersToQueue);
   });
 }
 function openCourtManually(courtId){
@@ -845,9 +831,8 @@ function renderRulesPanel(){
         <h4>How rotation works here</h4>
         <ul>
           <li>When a court finishes, the organizer records the winners</li>
-          <li><strong>Winners stay</strong> on the court for the next game</li>
-          <li>The next players from the waitlist join the winners</li>
-          <li>Losers are grouped at the <strong>back</strong> of the waitlist</li>
+          <li><strong>Waitlist time is the priority</strong> — longest wait plays next</li>
+          <li>Winners and losers both go to the back of the waitlist (winners just ahead)</li>
           <li>A court fills automatically, but the organizer always starts the clock manually</li>
         </ul>
       </div>
@@ -1120,7 +1105,7 @@ function renderEndGameModal(){
   <div class="modal-backdrop" data-action="cancel-end-game">
     <div class="modal">
       <h3>Who won on ${esc(court.label)}?</h3>
-      <p style="color:var(--muted);font-size:14px;">Tap the ${need} winner${need===1?"":"s"}. Winners stay on this court and the next players from the waitlist join them; the rest go to the back of the waitlist.</p>
+      <p style="color:var(--muted);font-size:14px;">Tap the ${need} winner${need===1?"":"s"}. Both winners and losers go to the back of the waitlist (winners just ahead of losers), and the court refills from whoever's been waiting longest.</p>
       <div class="winner-pick-list">
         ${players.map(p=>{
           const isSelected = endGameModal.selected.includes(p.id);
