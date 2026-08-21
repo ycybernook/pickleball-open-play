@@ -92,6 +92,8 @@
   .auth-card label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:5px;font-weight:600;}
   .auth-card input{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:11px 12px;border-radius:9px;font-size:15px;min-height:44px;}
   .auth-card input:focus{outline:2px solid var(--ball);outline-offset:1px;border-color:var(--ball);}
+  .auth-demo-creds{margin-top:4px;padding-top:12px;border-top:1px dashed var(--border);font-size:12px;color:var(--muted);text-align:center;line-height:1.6;}
+  .auth-demo-creds strong{color:var(--ball);font-weight:700;}
 
   /* ---------- App shell (organizer/admin) ---------- */
   main{flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:20px;}
@@ -617,16 +619,23 @@ async function loadProfileSilent(user){
   }catch(e){ console.error("Profile load failed", e); }
   render();
 }
-async function doSignIn(email, password){
-  if(!email || !password){ authError = "Enter your email and password."; render(); return; }
+function normalizeLoginId(v){
+  v = (v||"").trim();
+  if(!v) return v;
+  return v.includes("@") ? v : v.toLowerCase()+"@pickleball.local";
+}
+async function doSignIn(emailOrUsername, password){
+  const email = normalizeLoginId(emailOrUsername);
+  if(!email || !password){ authError = "Enter your email/username and password."; render(); return; }
   authBusy = true; authError = ""; render();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if(error){ authBusy = false; authError = error.message; render(); return; }
   await loadProfileSilent(data.user);
   authBusy = false; view = "app"; appTab = "dashboard"; render();
 }
-async function doSignUp(name, email, password){
-  if(!email || !password){ authError = "Enter an email and password."; render(); return; }
+async function doSignUp(name, emailOrUsername, password){
+  const email = normalizeLoginId(emailOrUsername);
+  if(!email || !password){ authError = "Enter an email/username and password."; render(); return; }
   if(password.length < 6){ authError = "Password must be at least 6 characters."; render(); return; }
   authBusy = true; authError = ""; render();
   const { data, error } = await supabase.auth.signUp({ email, password });
@@ -745,11 +754,12 @@ function renderLoginPage(){
       ${isSignup ? `<p class="auth-hint">The very first account created becomes the event Admin automatically. Every account after that starts as an Organizer.</p>` : ""}
       ${authError ? `<div class="auth-error">${esc(authError)}</div>` : ""}
       ${isSignup ? `<label>Display name<input id="authName" type="text" autocomplete="name" /></label>` : ""}
-      <label>Email<input id="authEmail" type="email" autocomplete="email" /></label>
+      <label>${isSignup ? "Email" : "Email or username"}<input id="authEmail" type="text" autocomplete="username" /></label>
       <label>Password<input id="authPassword" type="password" autocomplete="${isSignup?"new-password":"current-password"}" /></label>
       <button class="btn primary full" data-action="${isSignup?"signup":"signin"}" ${authBusy?"disabled":""}>${authBusy ? "Please wait…" : (isSignup ? "Create account" : "Sign In")}</button>
       <button class="btn link" data-action="toggle-auth-mode">${isSignup ? "Already have an account? Sign in" : "New organizer? Create an account"}</button>
       <button class="btn link" data-action="view-kiosk">${icon("tv")} Back to Kiosk</button>
+      ${!isSignup ? `<div class="auth-demo-creds">Demo accounts — <strong>Admin</strong> / 12345678 &nbsp;·&nbsp; <strong>Organizer1</strong> / 12345678</div>` : ""}
     </div>
   </div>`;
 }
