@@ -5,116 +5,179 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pickleball Open Play Dashboard</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏓</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0f1720; --panel:#17222e; --panel2:#1e2c3a; --border:#2b3b4c;
-    --text:#eaf2f8; --muted:#93a5b8; --accent:#3fd0c9; --accent2:#5b8cff;
-    --green:#1f9d55; --green-bg:#123b26; --yellow:#e0a72e; --yellow-bg:#3a2f10;
-    --gray-bg:#232f3b; --red:#e0483f;
+    --court-navy:#0A121C; --panel:#121D2B; --panel2:#182636; --panel3:#1E3046;
+    --border:#26384D; --border-bright:#33506E;
+    --text:#F2F7FB; --muted:#8FA3B8; --muted2:#6B8199;
+    --ball:#E4FF3D; --ball-deep:#C7DE1F; --court-green:#18B368; --court-green-deep:#0E4A32;
+    --amber:#F5A524; --amber-bg:#3A2C0E; --red:#EF4444; --red-bg:#3B1414;
+    --gray-bg:#1A2634;
+    --font-head:'Barlow Condensed',sans-serif; --font-body:'Barlow',-apple-system,BlinkMacSystemFont,sans-serif;
+    --radius:14px;
   }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
-  button{font-family:inherit;cursor:pointer;}
-  input,select{font-family:inherit;}
+  body{margin:0;font-family:var(--font-body);background:var(--court-navy);color:var(--text);-webkit-font-smoothing:antialiased;}
+  button,input,select{font-family:inherit;}
+  button{cursor:pointer;}
+  h1,h2,h3{font-family:var(--font-head);letter-spacing:.01em;}
   ::-webkit-scrollbar{width:10px;height:10px;}
-  ::-webkit-scrollbar-thumb{background:#2b3b4c;border-radius:6px;}
+  ::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:6px;}
+
+  .icon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:none;}
+  .icon svg{width:100%;height:100%;}
+  .icon.lg{width:28px;height:28px;}
+  .icon.xl{width:44px;height:44px;}
 
   .app{min-height:100vh;display:flex;flex-direction:column;}
-  header.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
-  .title-block{display:flex;flex-direction:column;gap:2px;}
-  .title-block h1{margin:0;font-size:20px;display:flex;align-items:center;gap:8px;}
-  .save-indicator{font-size:12px;color:var(--muted);min-height:14px;}
-  .save-indicator.saved{color:var(--accent);}
-  .topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:14px;display:inline-flex;align-items:center;gap:6px;}
-  .btn:hover{border-color:var(--accent2);}
-  .btn.primary{background:var(--accent2);border-color:var(--accent2);color:#fff;}
-  .btn.primary:hover{filter:brightness(1.1);}
+  .btn{background:var(--panel3);border:1px solid var(--border-bright);color:var(--text);padding:9px 16px;border-radius:9px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:7px;transition:background .15s,border-color .15s,transform .1s;min-height:40px;}
+  .btn:hover{border-color:var(--ball);}
+  .btn:active{transform:scale(.97);}
+  .btn.primary{background:var(--ball);border-color:var(--ball);color:#111;}
+  .btn.primary:hover{background:var(--ball-deep);}
   .btn.danger{background:var(--red);border-color:var(--red);color:#fff;}
-  .btn.icon{padding:8px 10px;font-size:16px;}
-  .btn.small{padding:5px 10px;font-size:12px;}
-  .btn:disabled{opacity:.4;cursor:not-allowed;}
-  .view-toggle{display:flex;background:var(--panel2);border-radius:8px;border:1px solid var(--border);overflow:hidden;}
-  .view-toggle button{background:transparent;border:none;color:var(--muted);padding:8px 16px;font-size:14px;}
-  .view-toggle button.active{background:var(--accent2);color:#fff;}
+  .btn.icon{padding:9px 11px;}
+  .btn.small{padding:6px 11px;font-size:12.5px;min-height:32px;}
+  .btn.link{background:transparent;border:none;color:var(--muted);text-decoration:underline;padding:6px 4px;min-height:auto;}
+  .btn.full{width:100%;justify-content:center;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
 
-  main{flex:1;padding:18px 20px;display:flex;flex-direction:column;gap:18px;}
+  /* ---------- Kiosk ---------- */
+  .kiosk-hero{position:relative;background-image:linear-gradient(100deg,rgba(10,18,28,.94) 15%,rgba(10,18,28,.55) 60%,rgba(10,18,28,.85)),url('hero.png');background-size:cover;background-position:center 30%;padding:28px 32px;border-bottom:3px solid var(--ball);}
+  .kiosk-hero-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+  .kiosk-brand{display:flex;flex-direction:column;gap:2px;}
+  .kiosk-brand .kicker{font-family:var(--font-head);font-weight:700;font-size:15px;letter-spacing:.18em;color:var(--ball);text-transform:uppercase;}
+  .kiosk-brand h1{margin:0;font-size:44px;font-weight:800;line-height:1;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.5);}
+  .kiosk-clock{font-family:var(--font-head);font-size:28px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums;}
+  .kiosk-hero-actions{display:flex;gap:10px;align-items:center;}
 
-  .org-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start;}
-  @media (max-width:900px){.org-grid{grid-template-columns:1fr;}}
+  .kiosk{padding:26px 32px;display:flex;flex-direction:column;gap:26px;}
+  .kiosk-section-title{font-size:26px;font-weight:700;margin:0 0 14px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:10px;}
+  .kiosk-courts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px;}
+  .kiosk-court{position:relative;border-radius:20px;padding:22px;border:2px solid var(--border);background:var(--gray-bg);overflow:hidden;min-height:230px;transition:background .3s,border-color .3s;}
+  .kiosk-court.playing{background:var(--court-green-deep);border-color:var(--court-green);}
+  .kiosk-court.ending{background:var(--amber-bg);border-color:var(--amber);}
+  .kiosk-court.timeup{background:var(--red-bg);border-color:var(--red);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6);}50%{box-shadow:0 0 0 10px rgba(239,68,68,0);}}
+  .kiosk-court-head{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;}
+  .kiosk-court h3{margin:0;font-size:30px;font-weight:700;color:#fff;}
+  .kiosk-status-pill{font-size:13px;font-weight:700;padding:5px 12px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em;background:rgba(0,0,0,.35);color:#fff;}
+  .kiosk-timer{font-family:var(--font-head);font-size:56px;font-weight:800;text-align:center;margin:8px 0;font-variant-numeric:tabular-nums;color:#fff;position:relative;z-index:2;}
+  .kiosk-players{list-style:none;margin:6px 0 0;padding:0;font-size:22px;font-weight:600;display:flex;flex-direction:column;gap:6px;position:relative;z-index:2;color:#fff;}
+  .kiosk-empty{font-size:19px;color:var(--muted);text-align:center;padding:26px 0;}
+  .camera-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0;z-index:0;}
+  .camera-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15) 0%,rgba(0,0,0,.05) 40%,rgba(0,0,0,.75) 100%);z-index:1;}
+  .live-badge{position:absolute;top:16px;right:16px;background:var(--red);color:#fff;font-size:11px;font-weight:800;letter-spacing:.08em;padding:4px 9px;border-radius:6px;z-index:2;display:flex;align-items:center;gap:5px;}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:blink 1.4s infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.25;}}
+  .kiosk-court.has-camera .kiosk-players{position:absolute;bottom:16px;left:20px;right:20px;font-size:18px;}
+  .kiosk-court.has-camera .kiosk-timer{position:absolute;top:56px;left:0;right:0;font-size:44px;}
+  .kiosk-court.has-camera .kiosk-status-pill{}
 
-  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
-  .panel h2{margin:0 0 10px;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+  .kiosk-queue{background:var(--panel);border-radius:20px;padding:24px;border:2px solid var(--border);}
+  .kiosk-queue-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;font-size:21px;font-weight:600;}
+  .kiosk-queue-list li{background:var(--panel2);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+  .kiosk-queue-list li .pos{color:var(--ball);font-weight:800;margin-right:10px;font-family:var(--font-head);}
 
-  .courts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
-  .court-card{border-radius:12px;padding:12px;border:1px solid var(--border);position:relative;transition:background .3s,border-color .3s;background:var(--gray-bg);}
-  .court-card.playing{background:var(--green-bg);border-color:var(--green);}
-  .court-card.ending{background:var(--yellow-bg);border-color:var(--yellow);}
-  .court-card.timeup{animation:pulse 1s infinite;}
-  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,72,63,.6);}50%{box-shadow:0 0 0 8px rgba(224,72,63,0);}}
-  .court-card.dragover{outline:2px dashed var(--accent);}
+  /* ---------- Auth ---------- */
+  .auth-shell{min-height:100vh;background-image:linear-gradient(160deg,rgba(10,18,28,.92),rgba(10,18,28,.7) 55%,rgba(10,18,28,.95)),url('hero.png');background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .auth-card{width:100%;max-width:400px;background:rgba(18,29,43,.9);backdrop-filter:blur(6px);border:1px solid var(--border-bright);border-radius:18px;padding:32px 30px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+  .auth-brand{display:flex;align-items:center;gap:9px;color:var(--ball);font-weight:700;font-family:var(--font-head);font-size:16px;letter-spacing:.05em;text-transform:uppercase;}
+  .auth-card h2{margin:0 0 4px;font-size:26px;color:#fff;}
+  .auth-hint{font-size:12.5px;color:var(--muted);margin:-6px 0 4px;line-height:1.5;}
+  .auth-error{background:var(--red-bg);border:1px solid var(--red);color:#fca5a5;padding:9px 12px;border-radius:9px;font-size:13px;}
+  .auth-card label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:5px;font-weight:600;}
+  .auth-card input{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:11px 12px;border-radius:9px;font-size:15px;min-height:44px;}
+  .auth-card input:focus{outline:2px solid var(--ball);outline-offset:1px;border-color:var(--ball);}
+
+  /* ---------- App shell (organizer/admin) ---------- */
+  main{flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:20px;}
+  header.appbar{display:flex;align-items:center;justify-content:space-between;padding:12px 22px;background:var(--panel);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px;position:sticky;top:0;z-index:20;}
+  .appbar-left{display:flex;flex-direction:column;gap:2px;}
+  .appbar-left .brand{font-family:var(--font-head);font-weight:700;font-size:19px;display:flex;align-items:center;gap:8px;color:#fff;}
+  .save-indicator{font-size:11.5px;color:var(--muted);min-height:14px;}
+  .save-indicator.saved{color:var(--court-green);}
+  .tabs{display:flex;gap:4px;background:var(--panel2);border-radius:10px;border:1px solid var(--border);padding:3px;}
+  .tabs button{background:transparent;border:none;color:var(--muted);padding:8px 16px;border-radius:8px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:7px;min-height:36px;}
+  .tabs button.active{background:var(--ball);color:#111;}
+  .appbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .role-badge{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:20px;background:var(--panel3);color:var(--ball);border:1px solid var(--border-bright);}
+  .role-badge.admin{background:var(--ball);color:#111;}
+
+  .org-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;}
+  @media (max-width:960px){.org-grid{grid-template-columns:1fr;}}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+  .panel h2{margin:0 0 12px;font-size:16px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px;font-weight:700;}
+
+  .courts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
+  .court-card{border-radius:var(--radius);padding:14px;border:1px solid var(--border);position:relative;transition:background .3s,border-color .3s;background:var(--gray-bg);}
+  .court-card.playing{background:var(--court-green-deep);border-color:var(--court-green);}
+  .court-card.ending{background:var(--amber-bg);border-color:var(--amber);}
+  .court-card.timeup{animation:pulse 1s infinite;background:var(--red-bg);border-color:var(--red);}
+  .court-card.dragover{outline:2px dashed var(--ball);}
   .court-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
-  .court-name{font-weight:700;font-size:15px;}
-  .status-pill{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;text-transform:uppercase;}
-  .status-pill.playing{background:var(--green);color:#fff;}
-  .status-pill.ending{background:var(--yellow);color:#1a1a1a;}
-  .status-pill.open{background:#3a4a5a;color:var(--muted);}
-  .court-timer{font-size:26px;font-weight:800;text-align:center;margin:6px 0;font-variant-numeric:tabular-nums;}
+  .court-name{font-family:var(--font-head);font-weight:700;font-size:18px;}
+  .status-pill{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:700;text-transform:uppercase;}
+  .status-pill.playing{background:var(--court-green);color:#04150c;}
+  .status-pill.ending{background:var(--amber);color:#241a03;}
+  .status-pill.open{background:var(--panel3);color:var(--muted);}
+  .court-timer{font-family:var(--font-head);font-size:30px;font-weight:800;text-align:center;margin:6px 0;font-variant-numeric:tabular-nums;}
   .court-players{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;min-height:40px;}
-  .player-chip{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-size:13px;display:flex;justify-content:space-between;gap:6px;cursor:grab;}
+  .player-chip{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:8px;padding:7px 9px;font-size:13.5px;display:flex;justify-content:space-between;gap:6px;cursor:grab;}
   .player-chip .rating{color:var(--muted);font-size:11px;}
-  .court-actions{display:flex;gap:6px;margin-top:10px;}
-  .court-slot-empty{border:1px dashed var(--border);border-radius:7px;padding:6px;font-size:12px;color:var(--muted);text-align:center;}
+  .court-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+  .court-slot-empty{border:1px dashed var(--border);border-radius:8px;padding:7px;font-size:12px;color:var(--muted);text-align:center;}
 
-  .checkin-form{display:flex;flex-direction:column;gap:8px;}
+  .camera-config{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:7px;}
+  .camera-toggle{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);font-weight:600;cursor:pointer;}
+  .camera-toggle input{width:16px;height:16px;}
+  .camera-config input[type=text]{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:7px;font-size:12.5px;width:100%;}
+
+  .checkin-form{display:flex;flex-direction:column;gap:9px;}
   .checkin-form .row{display:flex;gap:8px;}
-  .checkin-form input,.checkin-form select{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:14px;}
+  .checkin-form input,.checkin-form select{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:10px 11px;border-radius:8px;font-size:14px;min-height:42px;}
 
   .queue-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;}
-  .queue-item{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:7px 9px;cursor:grab;}
-  .queue-item .pos{font-size:11px;color:var(--muted);width:18px;text-align:center;}
-  .queue-item .name{flex:1;font-size:14px;}
+  .queue-item{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:8px 10px;cursor:grab;}
+  .queue-item .pos{font-size:11px;color:var(--muted);width:18px;text-align:center;font-weight:700;}
+  .queue-item .name{flex:1;font-size:14px;font-weight:600;}
   .queue-item .rating{font-size:11px;color:var(--muted);}
-  .queue-item .wait{font-size:11px;color:var(--accent);}
-  .queue-item.dragover{outline:2px dashed var(--accent);}
+  .queue-item .wait{font-size:11px;color:var(--ball);font-weight:600;}
+  .queue-item.dragover{outline:2px dashed var(--ball);}
 
-  .settings-grid{display:flex;flex-direction:column;gap:10px;}
-  .settings-grid label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px;}
-  .settings-grid input,.settings-grid select{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:7px;font-size:14px;}
+  .settings-grid{display:flex;flex-direction:column;gap:12px;}
+  .settings-grid label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:5px;font-weight:600;}
+  .settings-grid input,.settings-grid select{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px;font-size:14px;min-height:38px;}
   .toggle-row{display:flex;gap:6px;}
-  .toggle-row button{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--muted);padding:7px;border-radius:7px;font-size:12px;}
-  .toggle-row button.active{background:var(--accent2);color:#fff;border-color:var(--accent2);}
+  .toggle-row button{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--muted);padding:8px;border-radius:8px;font-size:12.5px;font-weight:600;min-height:36px;}
+  .toggle-row button.active{background:var(--ball);color:#111;border-color:var(--ball);}
 
-  table.roster{width:100%;border-collapse:collapse;font-size:13px;}
-  table.roster th,table.roster td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);}
-  table.roster th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;}
-  .badge{font-size:10px;padding:1px 6px;border-radius:10px;background:var(--panel2);color:var(--muted);}
-  .badge.court{background:var(--green);color:#fff;}
-  .badge.queue{background:var(--accent2);color:#fff;}
+  table.roster{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.roster th,table.roster td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);}
+  table.roster th{color:var(--muted);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
+  .badge{font-size:10px;padding:2px 8px;border-radius:10px;background:var(--panel3);color:var(--muted);font-weight:700;}
+  .badge.court{background:var(--court-green);color:#04150c;}
+  .badge.queue{background:var(--ball);color:#111;}
+  .badge.admin{background:var(--ball);color:#111;}
 
-  .kiosk{padding:20px;display:flex;flex-direction:column;gap:20px;}
-  .kiosk-courts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;}
-  .kiosk-court{border-radius:18px;padding:20px;border:2px solid var(--border);background:var(--gray-bg);}
-  .kiosk-court.playing{background:var(--green-bg);border-color:var(--green);}
-  .kiosk-court.ending{background:var(--yellow-bg);border-color:var(--yellow);}
-  .kiosk-court.timeup{animation:pulse 1s infinite;}
-  .kiosk-court h3{margin:0 0 6px;font-size:26px;}
-  .kiosk-status{font-size:15px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;opacity:.85;}
-  .kiosk-timer{font-size:48px;font-weight:800;text-align:center;margin:10px 0;font-variant-numeric:tabular-nums;}
-  .kiosk-players{list-style:none;margin:8px 0 0;padding:0;font-size:22px;display:flex;flex-direction:column;gap:6px;}
-  .kiosk-players li{display:flex;justify-content:space-between;}
-  .kiosk-players .r{color:var(--muted);font-size:16px;}
-  .kiosk-empty{font-size:20px;color:var(--muted);text-align:center;padding:20px 0;}
-  .kiosk-queue{background:var(--panel);border-radius:18px;padding:20px;border:2px solid var(--border);}
-  .kiosk-queue h2{font-size:24px;margin:0 0 12px;color:var(--muted);text-transform:uppercase;}
-  .kiosk-queue-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;font-size:20px;}
-  .kiosk-queue-list li{background:var(--panel2);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;}
-  .kiosk-queue-list li .pos{color:var(--accent);font-weight:800;margin-right:8px;}
+  .stats-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;}
+  .stat-tile{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
+  .stat-num{display:block;font-family:var(--font-head);font-size:38px;font-weight:800;color:var(--ball);}
+  .stat-label{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+  .mvp-card{display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,var(--court-green-deep),var(--panel2));border:1px solid var(--court-green);border-radius:14px;padding:16px 18px;margin-bottom:18px;color:#fff;}
+  .mvp-card .icon{color:var(--ball);}
+  .mvp-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;}
+  .mvp-name{font-family:var(--font-head);font-size:22px;font-weight:700;}
+  .mvp-games{margin-left:auto;font-family:var(--font-head);font-size:22px;font-weight:800;color:var(--ball);}
 
-  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:100;}
-  .modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px;max-width:420px;width:90%;}
-  .modal h3{margin-top:0;}
-  .modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:420px;width:100%;}
+  .modal h3{margin-top:0;font-size:20px;}
+  .modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
 
   .print-area{display:none;}
   @media print{
@@ -123,7 +186,11 @@
     .print-area table{width:100%;border-collapse:collapse;}
     .print-area th,.print-area td{border:1px solid #999;padding:6px 8px;font-size:12px;color:#000;}
   }
-  .empty-state{color:var(--muted);font-size:13px;text-align:center;padding:20px 0;}
+  .empty-state{color:var(--muted);font-size:13px;text-align:center;padding:22px 0;}
+  @media (max-width:640px){
+    .kiosk-brand h1{font-size:30px;}
+    .kiosk-hero{padding:20px;}
+  }
 </style>
 </head>
 <body>
@@ -145,8 +212,28 @@ function esc(s){
   return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
+// ---------------- Icons (inline SVG, no emoji) ----------------
+const ICONS = {
+  camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.3"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M2.5 19c1-3.5 3.7-5 6.5-5s5.5 1.5 6.5 5"/><circle cx="17" cy="8" r="2.5"/><path d="M15.5 14.2c2.2.3 4 1.6 4.7 4.8"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"/><path d="M9 20h6M12 12v5"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>',
+  logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9"/></svg>',
+  courts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M12 4v16M3 12h18"/></svg>',
+  print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18h12v3H6zM4 9h16v7H4z"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16"/></svg>',
+  reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M5 14a8 8 0 0 0 14.3 2.7M19 10A8 8 0 0 0 4.7 7.3"/></svg>',
+  tv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+};
+function icon(name, extra){ return `<span class="icon${extra?" "+extra:""}">${ICONS[name]||""}</span>`; }
+
 function defaultSettings(){
   return { numCourts: 6, gameMinutes: 30, endingSoonMinutes: 2, playersPerCourt: 4, skillMode: "off" };
+}
+
+function newCourt(i){
+  return { id: uid(), label: "Court "+(i+1), playerIds: [], status: "open", startTime: null, endTime: null, cameraUrl: "", cameraEnabled: false };
 }
 
 function defaultState(){
@@ -154,13 +241,19 @@ function defaultState(){
   return {
     players: {},
     queueIds: [],
-    courts: Array.from({length: s.numCourts}, (_,i)=>({
-      id: uid(), label: "Court "+(i+1), playerIds: [], status: "open", startTime: null, endTime: null,
-    })),
+    courts: Array.from({length: s.numCourts}, (_,i)=>newCourt(i)),
     outIds: [],
     settings: s,
     sessionStart: Date.now(),
   };
+}
+
+function migrateState(parsed){
+  parsed.courts.forEach(c=>{
+    if(c.cameraUrl === undefined) c.cameraUrl = "";
+    if(c.cameraEnabled === undefined) c.cameraEnabled = false;
+  });
+  return parsed;
 }
 
 function loadState(){
@@ -169,7 +262,7 @@ function loadState(){
     if(!raw) return defaultState();
     const parsed = JSON.parse(raw);
     if(!parsed.players || !parsed.courts) return defaultState();
-    return parsed;
+    return migrateState(parsed);
   }catch(e){ return defaultState(); }
 }
 
@@ -216,18 +309,62 @@ function pickNextGroup(queueIds, players, count, skillMode){
   return { chosen, rest };
 }
 
+// ---------------- Camera embed helpers ----------------
+function parseYouTubeId(url){
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|live\/|embed\/))([\w-]{11})/);
+  return m ? m[1] : null;
+}
+function renderCameraEmbed(url){
+  if(!url) return "";
+  const yt = parseYouTubeId(url);
+  if(yt) return `<iframe class="camera-frame" src="https://www.youtube.com/embed/${yt}?autoplay=1&mute=1&controls=0&loop=1&playlist=${yt}" allow="autoplay; encrypted-media" allowfullscreen frameborder="0"></iframe>`;
+  if(/\.m3u8(\?|$)/i.test(url)) return `<video class="camera-frame" data-hls-src="${esc(url)}" autoplay muted playsinline loop></video>`;
+  if(/\.(mp4|webm|ogv)(\?|$)/i.test(url)) return `<video class="camera-frame" src="${esc(url)}" autoplay muted playsinline loop></video>`;
+  return `<img class="camera-frame" src="${esc(url)}" alt="Court camera feed" />`;
+}
+let HlsLib = null;
+async function getHls(){
+  if(HlsLib) return HlsLib;
+  const mod = await import("https://esm.sh/hls.js@1");
+  HlsLib = mod.default;
+  return HlsLib;
+}
+async function attachHlsVideos(){
+  const els = document.querySelectorAll("video[data-hls-src]:not([data-hls-attached])");
+  if(els.length===0) return;
+  try{
+    const Hls = await getHls();
+    els.forEach(v=>{
+      v.setAttribute("data-hls-attached","1");
+      const src = v.getAttribute("data-hls-src");
+      if(v.canPlayType("application/vnd.apple.mpegurl")){ v.src = src; }
+      else if(Hls && Hls.isSupported()){ const hls = new Hls(); hls.loadSource(src); hls.attachMedia(v); }
+    });
+  }catch(e){ console.error("HLS load failed", e); }
+}
+
 // ---------------- App state / controller ----------------
 let state = loadState();
-let view = "organizer";
+let view = "kiosk"; // kiosk | login | app  (kiosk is always the default on load)
+let appTab = "dashboard"; // dashboard | stats | admin
 let saveStatus = "saved";
-let showResetModal = false;
+let confirmModal = null; // {title,message,confirmLabel}
+let pendingConfirm = null;
 let showPrintArea = false;
 let saveTimer = null;
 let dragData = null;
 const alertedCourts = new Set();
-let cloudStatus = "connecting"; // connecting | synced | offline
+let cloudStatus = "connecting";
 let lastPushedJSON = null;
 let applyingRemote = false;
+
+// auth state
+let authUser = null;
+let authProfile = null;
+let authMode = "signin"; // signin | signup
+let authError = "";
+let authBusy = false;
+let adminProfiles = null;
 
 const root = document.getElementById("root");
 const printArea = document.getElementById("printArea");
@@ -257,9 +394,7 @@ async function pushToSupabase(){
   const json = JSON.stringify(state);
   if(json === lastPushedJSON) return;
   try{
-    const { error } = await supabase.from("pickleball_sessions")
-      .update({ state })
-      .eq("id", SESSION_ROW_ID);
+    const { error } = await supabase.from("pickleball_sessions").update({ state }).eq("id", SESSION_ROW_ID);
     if(error) throw error;
     lastPushedJSON = json;
     cloudStatus = "synced";
@@ -272,8 +407,9 @@ async function pushToSupabase(){
 
 function applyRemoteState(remoteState){
   if(!remoteState || typeof remoteState !== "object" || !remoteState.players || !remoteState.courts) return;
+  migrateState(remoteState);
   const json = JSON.stringify(remoteState);
-  if(json === lastPushedJSON) return; // echo of our own write
+  if(json === lastPushedJSON) return;
   applyingRemote = true;
   state = remoteState;
   lastPushedJSON = json;
@@ -286,8 +422,7 @@ function applyRemoteState(remoteState){
 async function initCloudSync(){
   if(!supabase){ cloudStatus = "offline"; updateSaveIndicatorText(); return; }
   try{
-    const { data, error } = await supabase.from("pickleball_sessions")
-      .select("state, updated_at").eq("id", SESSION_ROW_ID).single();
+    const { data, error } = await supabase.from("pickleball_sessions").select("state, updated_at").eq("id", SESSION_ROW_ID).single();
     if(error) throw error;
     const remoteState = data && data.state;
     const remoteHasData = remoteState && remoteState.players && Object.keys(remoteState.players).length>0;
@@ -295,7 +430,6 @@ async function initCloudSync(){
     if(remoteHasData && !localHasData){
       applyRemoteState(remoteState);
     } else {
-      // seed/overwrite cloud with local state (first run, or local is ahead)
       lastPushedJSON = null;
       await pushToSupabase();
     }
@@ -343,7 +477,7 @@ function update(fn){
   render();
 }
 
-// ---- actions ----
+// ---- session actions ----
 function checkIn(name, rating){
   if(!name || !name.trim()) return;
   update(draft=>{
@@ -395,7 +529,7 @@ function updateSettings(patch){
       const n = Math.max(1, Math.min(20, patch.numCourts));
       const cur = draft.courts.length;
       if(n > cur){
-        for(let i=cur;i<n;i++) draft.courts.push({id: uid(), label: "Court "+(i+1), playerIds:[], status:"open", startTime:null, endTime:null});
+        for(let i=cur;i<n;i++) draft.courts.push(newCourt(i));
       } else if(n < cur){
         const removed = draft.courts.splice(n);
         removed.forEach(c=>{ c.playerIds.forEach(pid=>{ if(draft.players[pid]&&draft.players[pid].checkedIn) draft.queueIds.push(pid); }); });
@@ -404,10 +538,16 @@ function updateSettings(patch){
     }
   });
 }
+function setCourtCamera(courtId, patch){
+  update(draft=>{
+    const court = draft.courts.find(c=>c.id===courtId);
+    if(!court) return;
+    Object.assign(court, patch);
+  });
+}
 function resetAll(){
   localStorage.removeItem(STORAGE_KEY);
   state = defaultState();
-  showResetModal = false;
   lastPushedJSON = null;
   pushToSupabase();
   render();
@@ -458,69 +598,197 @@ function exportCSV(){
   URL.revokeObjectURL(url);
 }
 
+// ---------------- Auth actions ----------------
+async function initAuth(){
+  if(!supabase) return;
+  try{
+    const { data: { session } } = await supabase.auth.getSession();
+    if(session) await loadProfileSilent(session.user);
+  }catch(e){ console.error("Auth init failed", e); }
+  supabase.auth.onAuthStateChange((event)=>{
+    if(event === "SIGNED_OUT"){ authUser = null; authProfile = null; render(); }
+  });
+}
+async function loadProfileSilent(user){
+  authUser = user;
+  try{
+    const { data: prof } = await supabase.from("pickleball_profiles").select("*").eq("id", user.id).maybeSingle();
+    authProfile = prof;
+  }catch(e){ console.error("Profile load failed", e); }
+  render();
+}
+async function doSignIn(email, password){
+  if(!email || !password){ authError = "Enter your email and password."; render(); return; }
+  authBusy = true; authError = ""; render();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if(error){ authBusy = false; authError = error.message; render(); return; }
+  await loadProfileSilent(data.user);
+  authBusy = false; view = "app"; appTab = "dashboard"; render();
+}
+async function doSignUp(name, email, password){
+  if(!email || !password){ authError = "Enter an email and password."; render(); return; }
+  if(password.length < 6){ authError = "Password must be at least 6 characters."; render(); return; }
+  authBusy = true; authError = ""; render();
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if(error){ authBusy = false; authError = error.message; render(); return; }
+  if(!data.session){
+    authBusy = false; authMode = "signin";
+    authError = "Account created. Check your email to confirm it, then sign in.";
+    render(); return;
+  }
+  try{
+    await supabase.from("pickleball_profiles").insert({ id: data.user.id, email, display_name: (name||"").trim() || email });
+  }catch(e){ console.error("Profile insert failed", e); }
+  await loadProfileSilent(data.user);
+  authBusy = false; view = "app"; appTab = "dashboard"; render();
+}
+async function doLogout(){
+  if(supabase) await supabase.auth.signOut();
+  authUser = null; authProfile = null; view = "kiosk"; render();
+}
+
+// ---------------- Admin actions ----------------
+async function loadAdminProfilesAndRender(){
+  const { data, error } = await supabase.from("pickleball_profiles").select("*").order("created_at");
+  if(error){ console.error("Admin profile load failed", error); adminProfiles = []; }
+  else adminProfiles = data || [];
+  render();
+}
+async function setUserRole(userId, role){
+  const { error } = await supabase.from("pickleball_profiles").update({ role }).eq("id", userId);
+  if(error) console.error("Role update failed", error);
+  await loadAdminProfilesAndRender();
+}
+async function removeUserProfile(userId){
+  const { error } = await supabase.from("pickleball_profiles").delete().eq("id", userId);
+  if(error) console.error("Remove user failed", error);
+  await loadAdminProfilesAndRender();
+}
+
 // ---------------- Rendering ----------------
 function render(){
   document.body.classList.toggle("printing", showPrintArea);
-  root.innerHTML = renderHeader() + (view==="organizer" ? renderOrganizer() : renderKiosk()) + renderResetModal();
+  let html;
+  if(view === "kiosk") html = renderKioskPage();
+  else if(view === "login") html = renderLoginPage();
+  else html = renderAppPage();
+  html += renderConfirmModal();
+  root.innerHTML = html;
   printArea.innerHTML = showPrintArea ? renderPrintArea() : "";
   tickTimers();
+  if(view === "kiosk") attachHlsVideos();
 }
 
-function renderHeader(){
+function renderKioskPage(){
+  const now = Date.now();
+  const queuedPlayers = state.queueIds.map(id=>state.players[id]).filter(Boolean);
+  const courtsHtml = state.courts.map(court=>{
+    const cls = courtStatusClass(court, state.settings, now);
+    const remain = court.status==="playing" ? court.endTime - now : null;
+    const statusLabel = court.status==="open" ? "Open" : cls==="timeup" ? "TIME'S UP" : cls==="ending" ? "Ending soon" : "In progress";
+    const hasCamera = court.cameraEnabled && court.cameraUrl && court.cameraUrl.trim();
+    const playersHtml = court.playerIds.length>0 ? `<ul class="kiosk-players">${court.playerIds.map(pid=>{
+        const p = state.players[pid]; if(!p) return "";
+        return `<li>${esc(p.name)}</li>`;
+      }).join("")}</ul>` : (hasCamera ? "" : `<div class="kiosk-empty">Court open</div>`);
+    return `<div class="kiosk-court ${cls}${hasCamera?" has-camera":""}" data-court-card="${court.id}">
+      ${hasCamera ? renderCameraEmbed(court.cameraUrl.trim()) + '<div class="camera-scrim"></div><div class="live-badge"><span class="live-dot"></span>LIVE</div>' : ""}
+      <div class="kiosk-court-head">
+        <h3>${esc(court.label)}</h3>
+        <span class="kiosk-status-pill" data-court-pill="${court.id}">${statusLabel}</span>
+      </div>
+      ${court.status==="playing" ? `<div class="kiosk-timer" data-timer-for="${court.id}" data-end="${court.endTime}">${fmtClock(remain)}</div>` : ""}
+      ${playersHtml}
+    </div>`;
+  }).join("");
+
+  const queueHtml = queuedPlayers.length===0 ? `<div class="kiosk-empty">No one waiting</div>` :
+    `<ul class="kiosk-queue-list">${queuedPlayers.map((p,idx)=>`
+      <li><span><span class="pos">${idx+1}</span>${esc(p.name)}</span></li>`).join("")}</ul>`;
+
+  const enterLabel = authUser ? "Enter Dashboard" : "Organizer Login";
+
   return `
   <div class="app">
-  <header class="topbar">
-    <div class="title-block">
-      <h1>🏓 Pickleball Open Play Dashboard</h1>
-      <span id="saveIndicator" class="save-indicator${saveStatus==="saved"?" saved":""}">${saveStatus==="saving"?"Saving…":"Saved"}</span>
-    </div>
-    <div class="topbar-actions">
-      <div class="view-toggle">
-        <button data-action="view" data-view="organizer" class="${view==="organizer"?"active":""}">Organizer</button>
-        <button data-action="view" data-view="kiosk" class="${view==="kiosk"?"active":""}">Kiosk / TV</button>
+    <div class="kiosk-hero">
+      <div class="kiosk-hero-inner">
+        <div class="kiosk-brand">
+          <span class="kicker">Open Play</span>
+          <h1>Pickleball Dashboard</h1>
+        </div>
+        <div class="kiosk-hero-actions">
+          <span class="kiosk-clock" id="kioskClock">${new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit",second:"2-digit"})}</span>
+          <button class="btn primary" data-action="enter-app-or-login">${icon("lock")} ${enterLabel}</button>
+        </div>
       </div>
-      <button class="btn icon" title="Export CSV" data-action="export-csv">⬇️</button>
-      <button class="btn icon" title="Print Summary" data-action="print">🖨️</button>
-      <button class="btn danger" data-action="open-reset">Reset Day</button>
     </div>
-  </header>
-  ${view==="organizer" ? renderOrganizerMain() : renderKioskMain()}
+    <div class="kiosk">
+      <section>
+        <h2 class="kiosk-section-title">${icon("courts","lg")} Courts</h2>
+        <div class="kiosk-courts">${courtsHtml}</div>
+      </section>
+      <section class="kiosk-queue">
+        <h2 class="kiosk-section-title" style="margin-bottom:12px;">Waitlist (${queuedPlayers.length})</h2>
+        ${queueHtml}
+      </section>
+    </div>
   </div>`;
 }
 
-function renderOrganizer(){ return ""; }
-function renderKiosk(){ return ""; }
+function renderLoginPage(){
+  const isSignup = authMode === "signup";
+  return `
+  <div class="auth-shell">
+    <div class="auth-card">
+      <div class="auth-brand">${icon("courts")} Pickleball Open Play</div>
+      <h2>${isSignup ? "Create an account" : "Organizer / Admin Sign In"}</h2>
+      ${isSignup ? `<p class="auth-hint">The very first account created becomes the event Admin automatically. Every account after that starts as an Organizer.</p>` : ""}
+      ${authError ? `<div class="auth-error">${esc(authError)}</div>` : ""}
+      ${isSignup ? `<label>Display name<input id="authName" type="text" autocomplete="name" /></label>` : ""}
+      <label>Email<input id="authEmail" type="email" autocomplete="email" /></label>
+      <label>Password<input id="authPassword" type="password" autocomplete="${isSignup?"new-password":"current-password"}" /></label>
+      <button class="btn primary full" data-action="${isSignup?"signup":"signin"}" ${authBusy?"disabled":""}>${authBusy ? "Please wait…" : (isSignup ? "Create account" : "Sign In")}</button>
+      <button class="btn link" data-action="toggle-auth-mode">${isSignup ? "Already have an account? Sign in" : "New organizer? Create an account"}</button>
+      <button class="btn link" data-action="view-kiosk">${icon("tv")} Back to Kiosk</button>
+    </div>
+  </div>`;
+}
 
-function renderOrganizerMain(){
-  const allPlayersArr = Object.values(state.players).sort((a,b)=>b.gamesPlayed-a.gamesPlayed || a.name.localeCompare(b.name));
-  const activeCount = allPlayersArr.filter(p=>p.checkedIn).length;
+function renderAppPage(){
+  const role = authProfile ? authProfile.role : "organizer";
+  const header = `
+  <header class="appbar">
+    <div class="appbar-left">
+      <span class="brand">${icon("courts")} Pickleball Open Play</span>
+      <span id="saveIndicator" class="save-indicator${saveStatus==="saved"?" saved":""}">${saveStatus==="saving"?"Saving…":"Saved"}</span>
+    </div>
+    <nav class="tabs">
+      <button data-action="apptab" data-tab="dashboard" class="${appTab==="dashboard"?"active":""}">${icon("courts")} Dashboard</button>
+      <button data-action="apptab" data-tab="stats" class="${appTab==="stats"?"active":""}">${icon("trophy")} Stats</button>
+      ${role==="admin" ? `<button data-action="apptab" data-tab="admin" class="${appTab==="admin"?"active":""}">${icon("users")} Admin</button>` : ""}
+    </nav>
+    <div class="appbar-right">
+      <span class="role-badge ${role}">${role}</span>
+      <button class="btn icon" title="View Kiosk" data-action="view-kiosk">${icon("tv")}</button>
+      <button class="btn icon" title="Export CSV" data-action="export-csv">${icon("download")}</button>
+      <button class="btn icon" title="Print Summary" data-action="print">${icon("print")}</button>
+      <button class="btn danger" data-action="open-reset">${icon("reset")} Reset Day</button>
+      <button class="btn" data-action="logout">${icon("logout")} Logout</button>
+    </div>
+  </header>`;
+
+  let body;
+  if(appTab === "stats") body = renderStatsTab();
+  else if(appTab === "admin" && role === "admin") body = renderAdminTab();
+  else body = renderDashboardTab();
+
+  return `<div class="app">${header}<main>${body}</main></div>`;
+}
+
+function renderDashboardTab(){
   const queuedPlayers = state.queueIds.map(id=>state.players[id]).filter(Boolean);
   const now = Date.now();
-
   const courtsHtml = state.courts.map(court=>renderCourtCard(court, now)).join("");
-
-  const rosterRows = allPlayersArr.length===0 ? `<div class="empty-state">No players checked in yet.</div>` : `
-    <div style="max-height:280px;overflow-y:auto;">
-    <table class="roster">
-      <thead><tr><th>Name</th><th>Rating</th><th>Arrival</th><th>Games</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-        ${allPlayersArr.map(p=>{
-          const onCourt = state.courts.find(c=>c.playerIds.includes(p.id));
-          const inQueue = state.queueIds.includes(p.id);
-          let statusHtml;
-          if(!p.checkedIn) statusHtml = `<span class="badge">Checked out</span>`;
-          else if(onCourt) statusHtml = `<span class="badge court">On ${esc(onCourt.label)}</span>`;
-          else if(inQueue) statusHtml = `<span class="badge queue">Waiting</span>`;
-          else statusHtml = `<span class="badge">Idle</span>`;
-          return `<tr>
-            <td>${esc(p.name)}</td><td>${p.rating.toFixed(1)}</td><td>${fmtTime(p.arrivalTime)}</td><td>${p.gamesPlayed}</td>
-            <td>${statusHtml}</td>
-            <td>${p.checkedIn ? `<button class="btn small" data-action="check-out" data-player="${p.id}">Check out</button>` : ""}</td>
-          </tr>`;
-        }).join("")}
-      </tbody>
-    </table>
-    </div>`;
 
   const queueHtml = queuedPlayers.length===0 ? `<li class="empty-state">Queue is empty.</li>` :
     queuedPlayers.map((p,idx)=>`
@@ -534,16 +802,11 @@ function renderOrganizerMain(){
   const settings = state.settings;
 
   return `
-  <main>
     <div class="org-grid">
       <div style="display:flex;flex-direction:column;gap:18px;">
         <div class="panel">
-          <h2>Courts (${state.courts.length})</h2>
+          <h2>${icon("courts")} Courts (${state.courts.length})</h2>
           <div class="courts-grid">${courtsHtml}</div>
-        </div>
-        <div class="panel">
-          <h2>All Players (${allPlayersArr.length}) — ${activeCount} checked in</h2>
-          ${rosterRows}
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:18px;">
@@ -587,8 +850,7 @@ function renderOrganizerMain(){
           </div>
         </div>
       </div>
-    </div>
-  </main>`;
+    </div>`;
 }
 
 function renderCourtCard(court, now){
@@ -620,52 +882,108 @@ function renderCourtCard(court, now){
         : `<button class="btn small" ${court.playerIds.length===0?"disabled":""} data-action="start-game" data-court="${court.id}">Start Game</button>`}
       ${court.playerIds.length>0 ? `<button class="btn small" data-action="open-court" data-court="${court.id}">Clear</button>` : ""}
     </div>
-  </div>`;
-}
-
-function renderKioskMain(){
-  const now = Date.now();
-  const queuedPlayers = state.queueIds.map(id=>state.players[id]).filter(Boolean);
-  const courtsHtml = state.courts.map(court=>{
-    const cls = courtStatusClass(court, state.settings, now);
-    const remain = court.status==="playing" ? court.endTime - now : null;
-    const statusLabel = court.status==="open" ? "Open" : cls==="timeup" ? "TIME'S UP" : cls==="ending" ? "Ending soon" : "In progress";
-    const playersHtml = court.playerIds.length>0 ? `<ul class="kiosk-players">${court.playerIds.map(pid=>{
-        const p = state.players[pid]; if(!p) return "";
-        return `<li><span>${esc(p.name)}</span><span class="r">${p.rating.toFixed(1)}</span></li>`;
-      }).join("")}</ul>` : `<div class="kiosk-empty">Court open</div>`;
-    return `<div class="kiosk-court ${cls}" data-court-card="${court.id}">
-      <h3>${esc(court.label)}</h3>
-      <div class="kiosk-status" data-court-pill="${court.id}">${statusLabel}</div>
-      ${court.status==="playing" ? `<div class="kiosk-timer" data-timer-for="${court.id}" data-end="${court.endTime}">${fmtClock(remain)}</div>` : ""}
-      ${playersHtml}
-    </div>`;
-  }).join("");
-
-  const queueHtml = queuedPlayers.length===0 ? `<div class="kiosk-empty">No one waiting</div>` :
-    `<ul class="kiosk-queue-list">${queuedPlayers.map((p,idx)=>`
-      <li><span><span class="pos">${idx+1}</span>${esc(p.name)}</span><span class="r">${p.rating.toFixed(1)}</span></li>`).join("")}</ul>`;
-
-  return `
-  <div class="kiosk">
-    <div class="kiosk-courts">${courtsHtml}</div>
-    <div class="kiosk-queue">
-      <h2>Waitlist (${queuedPlayers.length})</h2>
-      ${queueHtml}
+    <div class="camera-config">
+      <label class="camera-toggle">
+        <input type="checkbox" data-camera-enabled="${court.id}" ${court.cameraEnabled?"checked":""} /> ${icon("camera")} Camera feed
+      </label>
+      ${court.cameraEnabled ? `<input type="text" placeholder="YouTube live / .m3u8 / .mp4 / MJPEG URL" value="${esc(court.cameraUrl||"")}" data-camera-url="${court.id}" />` : ""}
     </div>
   </div>`;
 }
 
-function renderResetModal(){
-  if(!showResetModal) return "";
+function renderRosterTable(allPlayersArr){
+  if(allPlayersArr.length===0) return `<div class="empty-state">No players checked in yet.</div>`;
   return `
-  <div class="modal-backdrop" data-action="close-reset-backdrop">
-    <div class="modal" data-stop-close="1">
-      <h3>Reset the whole session?</h3>
-      <p style="color:var(--muted);font-size:14px;">This clears all players, courts, queue, and stats to start a fresh open-play day. This cannot be undone.</p>
+    <div style="max-height:420px;overflow-y:auto;">
+    <table class="roster">
+      <thead><tr><th>#</th><th>Name</th><th>Rating</th><th>Arrival</th><th>Games</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        ${allPlayersArr.map((p,i)=>{
+          const onCourt = state.courts.find(c=>c.playerIds.includes(p.id));
+          const inQueue = state.queueIds.includes(p.id);
+          let statusHtml;
+          if(!p.checkedIn) statusHtml = `<span class="badge">Checked out</span>`;
+          else if(onCourt) statusHtml = `<span class="badge court">On ${esc(onCourt.label)}</span>`;
+          else if(inQueue) statusHtml = `<span class="badge queue">Waiting</span>`;
+          else statusHtml = `<span class="badge">Idle</span>`;
+          return `<tr>
+            <td>${i+1}</td>
+            <td>${esc(p.name)}</td><td>${p.rating.toFixed(1)}</td><td>${fmtTime(p.arrivalTime)}</td><td>${p.gamesPlayed}</td>
+            <td>${statusHtml}</td>
+            <td>${p.checkedIn ? `<button class="btn small" data-action="check-out" data-player="${p.id}">Check out</button>` : ""}</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+    </div>`;
+}
+
+function renderStatsTab(){
+  const allPlayersArr = Object.values(state.players).sort((a,b)=>b.gamesPlayed-a.gamesPlayed || a.name.localeCompare(b.name));
+  const activeCount = allPlayersArr.filter(p=>p.checkedIn).length;
+  const totalGames = allPlayersArr.reduce((s,p)=>s+p.gamesPlayed,0);
+  const activeCourts = state.courts.filter(c=>c.status==="playing").length;
+  const mvp = allPlayersArr[0];
+  return `
+    <div class="panel">
+      <h2>${icon("chart")} Session Stats</h2>
+      <div class="stats-tiles">
+        <div class="stat-tile"><span class="stat-num">${allPlayersArr.length}</span><span class="stat-label">Players</span></div>
+        <div class="stat-tile"><span class="stat-num">${activeCount}</span><span class="stat-label">Checked In</span></div>
+        <div class="stat-tile"><span class="stat-num">${totalGames}</span><span class="stat-label">Games Played</span></div>
+        <div class="stat-tile"><span class="stat-num">${activeCourts}</span><span class="stat-label">Courts Active</span></div>
+      </div>
+      ${mvp && mvp.gamesPlayed>0 ? `
+      <div class="mvp-card">
+        ${icon("trophy","lg")}
+        <div><div class="mvp-label">Most Active Player</div><div class="mvp-name">${esc(mvp.name)}</div></div>
+        <div class="mvp-games">${mvp.gamesPlayed} games</div>
+      </div>` : ""}
+      <h2 style="margin-top:6px;">Player Stat Sheet</h2>
+      ${renderRosterTable(allPlayersArr)}
+    </div>`;
+}
+
+function renderAdminTab(){
+  const rows = adminProfiles;
+  if(rows === null) return `<div class="panel"><h2>${icon("users")} User Management</h2><div class="empty-state">Loading users…</div></div>`;
+  return `
+    <div class="panel">
+      <h2>${icon("users")} User Management</h2>
+      ${rows.length===0 ? `<div class="empty-state">No accounts yet.</div>` : `
+      <div style="max-height:480px;overflow-y:auto;">
+      <table class="roster">
+        <thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Joined</th><th></th></tr></thead>
+        <tbody>
+          ${rows.map(r=>`
+          <tr>
+            <td>${esc(r.email||"")}</td>
+            <td>${esc(r.display_name||"")}</td>
+            <td>
+              <select data-role-select="${r.id}" ${authUser && r.id===authUser.id ? "disabled" : ""}>
+                <option value="organizer" ${r.role==="organizer"?"selected":""}>Organizer</option>
+                <option value="admin" ${r.role==="admin"?"selected":""}>Admin</option>
+              </select>
+            </td>
+            <td>${r.created_at ? new Date(r.created_at).toLocaleDateString() : ""}</td>
+            <td>${authUser && r.id===authUser.id ? `<span class="badge admin">You</span>` : `<button class="btn small danger" data-action="remove-user" data-uid="${r.id}">Remove</button>`}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+      </div>`}
+    </div>`;
+}
+
+function renderConfirmModal(){
+  if(!confirmModal) return "";
+  return `
+  <div class="modal-backdrop" data-action="cancel-confirm">
+    <div class="modal">
+      <h3>${esc(confirmModal.title)}</h3>
+      <p style="color:var(--muted);font-size:14px;">${esc(confirmModal.message)}</p>
       <div class="actions">
-        <button class="btn" data-action="close-reset">Cancel</button>
-        <button class="btn danger" data-action="confirm-reset">Yes, reset everything</button>
+        <button class="btn" data-action="cancel-confirm">Cancel</button>
+        <button class="btn danger" data-action="confirm-confirm">${esc(confirmModal.confirmLabel||"Confirm")}</button>
       </div>
     </div>
   </div>`;
@@ -689,7 +1007,7 @@ function renderPrintArea(){
     </table>`;
 }
 
-// lightweight per-second update: timers + wait times + status classes, no full re-render
+// lightweight per-second update: timers + wait times + status classes + kiosk clock, no full re-render
 function tickTimers(){
   const now = Date.now();
   document.querySelectorAll("[data-timer-for]").forEach(el=>{
@@ -700,6 +1018,8 @@ function tickTimers(){
     const arrival = Number(el.getAttribute("data-arrival"));
     el.textContent = "waiting "+fmtWait(now-arrival);
   });
+  const clockEl = document.getElementById("kioskClock");
+  if(clockEl) clockEl.textContent = new Date(now).toLocaleTimeString([], {hour:"numeric",minute:"2-digit",second:"2-digit"});
   state.courts.forEach(court=>{
     const cls = courtStatusClass(court, state.settings, now);
     document.querySelectorAll(`[data-court-card="${court.id}"]`).forEach(el=>{
@@ -707,16 +1027,13 @@ function tickTimers(){
       el.classList.add(cls);
     });
     document.querySelectorAll(`[data-court-pill="${court.id}"]`).forEach(el=>{
-      const label = court.status==="open" ? "Open" : cls==="timeup" ? (el.classList.contains("kiosk-status")?"TIME'S UP":"Time up!") : cls==="ending" ? "Ending soon" : "In progress";
+      const label = court.status==="open" ? "Open" : cls==="timeup" ? (el.classList.contains("kiosk-status-pill")?"TIME'S UP":"Time up!") : cls==="ending" ? "Ending soon" : "In progress";
       el.textContent = label;
       el.classList.remove("open","playing","ending");
       el.classList.add(court.status==="open"?"open":(cls==="playing"?"playing":"ending"));
     });
     if(court.status==="playing" && court.endTime <= now){
-      if(!alertedCourts.has(court.id)){
-        alertedCourts.add(court.id);
-        beep();
-      }
+      if(!alertedCourts.has(court.id)){ alertedCourts.add(court.id); beep(); }
     } else {
       alertedCourts.delete(court.id);
     }
@@ -740,16 +1057,58 @@ document.addEventListener("click", (e)=>{
   if(actionEl){
     const action = actionEl.getAttribute("data-action");
     switch(action){
-      case "view": view = actionEl.getAttribute("data-view"); render(); break;
+      case "view-kiosk": view = "kiosk"; render(); break;
+      case "enter-app-or-login":
+        if(authUser){ view = "app"; appTab = "dashboard"; } else { view = "login"; authMode = "signin"; authError = ""; }
+        render();
+        break;
+      case "toggle-auth-mode": authMode = authMode==="signup" ? "signin" : "signup"; authError = ""; render(); break;
+      case "signin": {
+        const email = document.getElementById("authEmail").value.trim();
+        const password = document.getElementById("authPassword").value;
+        doSignIn(email, password);
+        break;
+      }
+      case "signup": {
+        const name = document.getElementById("authName").value;
+        const email = document.getElementById("authEmail").value.trim();
+        const password = document.getElementById("authPassword").value;
+        doSignUp(name, email, password);
+        break;
+      }
+      case "logout": doLogout(); break;
+      case "apptab": {
+        const tab = actionEl.getAttribute("data-tab");
+        appTab = tab;
+        if(tab === "admin"){ adminProfiles = null; render(); loadAdminProfilesAndRender(); }
+        else render();
+        break;
+      }
+      case "remove-user": {
+        const uidv = actionEl.getAttribute("data-uid");
+        confirmModal = { title: "Remove this user?", message: "They will lose organizer/admin access immediately. This cannot be undone.", confirmLabel: "Remove access" };
+        pendingConfirm = ()=>removeUserProfile(uidv);
+        render();
+        break;
+      }
       case "export-csv": exportCSV(); break;
       case "print":
         showPrintArea = true; render();
         setTimeout(()=>{ window.print(); showPrintArea=false; render(); }, 150);
         break;
-      case "open-reset": showResetModal = true; render(); break;
-      case "close-reset": showResetModal = false; render(); break;
-      case "close-reset-backdrop": if(t===actionEl) { showResetModal = false; render(); } break;
-      case "confirm-reset": resetAll(); break;
+      case "open-reset":
+        confirmModal = { title: "Reset the whole session?", message: "This clears all players, courts, queue, and stats to start a fresh open-play day. This cannot be undone.", confirmLabel: "Yes, reset everything" };
+        pendingConfirm = resetAll;
+        render();
+        break;
+      case "cancel-confirm": confirmModal = null; pendingConfirm = null; render(); break;
+      case "confirm-confirm": {
+        const fn = pendingConfirm;
+        confirmModal = null; pendingConfirm = null;
+        if(fn) fn();
+        render();
+        break;
+      }
       case "check-in": {
         const nameEl = document.getElementById("checkinName");
         const ratingEl = document.getElementById("checkinRating");
@@ -764,9 +1123,8 @@ document.addEventListener("click", (e)=>{
     }
     return;
   }
-  // click on modal backdrop itself (not inner modal)
   if(t.classList && t.classList.contains("modal-backdrop")){
-    showResetModal = false; render();
+    confirmModal = null; pendingConfirm = null; render();
   }
 });
 
@@ -776,6 +1134,10 @@ document.addEventListener("keydown", (e)=>{
     const ratingEl = document.getElementById("checkinRating");
     checkIn(nameEl.value, ratingEl.value);
   }
+  if(e.target && (e.target.id === "authEmail" || e.target.id === "authPassword" || e.target.id === "authName") && e.key === "Enter"){
+    const btn = document.querySelector('[data-action="signin"], [data-action="signup"]');
+    if(btn) btn.click();
+  }
 });
 
 document.addEventListener("change", (e)=>{
@@ -784,6 +1146,12 @@ document.addEventListener("change", (e)=>{
     const field = t.getAttribute("data-setting");
     const val = Number(t.value);
     if(!Number.isNaN(val)) updateSettings({[field]: val});
+  } else if(t.matches && t.matches("[data-camera-enabled]")){
+    setCourtCamera(t.getAttribute("data-camera-enabled"), { cameraEnabled: t.checked });
+  } else if(t.matches && t.matches("[data-camera-url]")){
+    setCourtCamera(t.getAttribute("data-camera-url"), { cameraUrl: t.value.trim() });
+  } else if(t.matches && t.matches("[data-role-select]")){
+    setUserRole(t.getAttribute("data-role-select"), t.value);
   }
 });
 
@@ -832,11 +1200,12 @@ document.addEventListener("drop", (e)=>{
   dragData = null;
 });
 
-// Global 1s tick for timers/wait-times/status colors
+// Global 1s tick for timers/wait-times/status colors/kiosk clock
 setInterval(tickTimers, 1000);
 
 render();
 initCloudSync();
+initAuth();
 </script>
 </body>
 </html>
