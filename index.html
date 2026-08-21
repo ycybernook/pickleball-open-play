@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pickleball Open Play Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏓</text></svg>">
+<style>
+  :root{
+    --bg:#0f1720; --panel:#17222e; --panel2:#1e2c3a; --border:#2b3b4c;
+    --text:#eaf2f8; --muted:#93a5b8; --accent:#3fd0c9; --accent2:#5b8cff;
+    --green:#1f9d55; --green-bg:#123b26; --yellow:#e0a72e; --yellow-bg:#3a2f10;
+    --gray-bg:#232f3b; --red:#e0483f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:#2b3b4c;border-radius:6px;}
+
+  .app{min-height:100vh;display:flex;flex-direction:column;}
+  header.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
+  .title-block{display:flex;flex-direction:column;gap:2px;}
+  .title-block h1{margin:0;font-size:20px;display:flex;align-items:center;gap:8px;}
+  .save-indicator{font-size:12px;color:var(--muted);min-height:14px;}
+  .save-indicator.saved{color:var(--accent);}
+  .topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:14px;display:inline-flex;align-items:center;gap:6px;}
+  .btn:hover{border-color:var(--accent2);}
+  .btn.primary{background:var(--accent2);border-color:var(--accent2);color:#fff;}
+  .btn.primary:hover{filter:brightness(1.1);}
+  .btn.danger{background:var(--red);border-color:var(--red);color:#fff;}
+  .btn.icon{padding:8px 10px;font-size:16px;}
+  .btn.small{padding:5px 10px;font-size:12px;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .view-toggle{display:flex;background:var(--panel2);border-radius:8px;border:1px solid var(--border);overflow:hidden;}
+  .view-toggle button{background:transparent;border:none;color:var(--muted);padding:8px 16px;font-size:14px;}
+  .view-toggle button.active{background:var(--accent2);color:#fff;}
+
+  main{flex:1;padding:18px 20px;display:flex;flex-direction:column;gap:18px;}
+
+  .org-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start;}
+  @media (max-width:900px){.org-grid{grid-template-columns:1fr;}}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+  .panel h2{margin:0 0 10px;font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+
+  .courts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+  .court-card{border-radius:12px;padding:12px;border:1px solid var(--border);position:relative;transition:background .3s,border-color .3s;background:var(--gray-bg);}
+  .court-card.playing{background:var(--green-bg);border-color:var(--green);}
+  .court-card.ending{background:var(--yellow-bg);border-color:var(--yellow);}
+  .court-card.timeup{animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,72,63,.6);}50%{box-shadow:0 0 0 8px rgba(224,72,63,0);}}
+  .court-card.dragover{outline:2px dashed var(--accent);}
+  .court-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .court-name{font-weight:700;font-size:15px;}
+  .status-pill{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;text-transform:uppercase;}
+  .status-pill.playing{background:var(--green);color:#fff;}
+  .status-pill.ending{background:var(--yellow);color:#1a1a1a;}
+  .status-pill.open{background:#3a4a5a;color:var(--muted);}
+  .court-timer{font-size:26px;font-weight:800;text-align:center;margin:6px 0;font-variant-numeric:tabular-nums;}
+  .court-players{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px;min-height:40px;}
+  .player-chip{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-size:13px;display:flex;justify-content:space-between;gap:6px;cursor:grab;}
+  .player-chip .rating{color:var(--muted);font-size:11px;}
+  .court-actions{display:flex;gap:6px;margin-top:10px;}
+  .court-slot-empty{border:1px dashed var(--border);border-radius:7px;padding:6px;font-size:12px;color:var(--muted);text-align:center;}
+
+  .checkin-form{display:flex;flex-direction:column;gap:8px;}
+  .checkin-form .row{display:flex;gap:8px;}
+  .checkin-form input,.checkin-form select{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:14px;}
+
+  .queue-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;}
+  .queue-item{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:7px 9px;cursor:grab;}
+  .queue-item .pos{font-size:11px;color:var(--muted);width:18px;text-align:center;}
+  .queue-item .name{flex:1;font-size:14px;}
+  .queue-item .rating{font-size:11px;color:var(--muted);}
+  .queue-item .wait{font-size:11px;color:var(--accent);}
+  .queue-item.dragover{outline:2px dashed var(--accent);}
+
+  .settings-grid{display:flex;flex-direction:column;gap:10px;}
+  .settings-grid label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px;}
+  .settings-grid input,.settings-grid select{background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:7px;font-size:14px;}
+  .toggle-row{display:flex;gap:6px;}
+  .toggle-row button{flex:1;background:var(--panel2);border:1px solid var(--border);color:var(--muted);padding:7px;border-radius:7px;font-size:12px;}
+  .toggle-row button.active{background:var(--accent2);color:#fff;border-color:var(--accent2);}
+
+  table.roster{width:100%;border-collapse:collapse;font-size:13px;}
+  table.roster th,table.roster td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);}
+  table.roster th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;}
+  .badge{font-size:10px;padding:1px 6px;border-radius:10px;background:var(--panel2);color:var(--muted);}
+  .badge.court{background:var(--green);color:#fff;}
+  .badge.queue{background:var(--accent2);color:#fff;}
+
+  .kiosk{padding:20px;display:flex;flex-direction:column;gap:20px;}
+  .kiosk-courts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;}
+  .kiosk-court{border-radius:18px;padding:20px;border:2px solid var(--border);background:var(--gray-bg);}
+  .kiosk-court.playing{background:var(--green-bg);border-color:var(--green);}
+  .kiosk-court.ending{background:var(--yellow-bg);border-color:var(--yellow);}
+  .kiosk-court.timeup{animation:pulse 1s infinite;}
+  .kiosk-court h3{margin:0 0 6px;font-size:26px;}
+  .kiosk-status{font-size:15px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;opacity:.85;}
+  .kiosk-timer{font-size:48px;font-weight:800;text-align:center;margin:10px 0;font-variant-numeric:tabular-nums;}
+  .kiosk-players{list-style:none;margin:8px 0 0;padding:0;font-size:22px;display:flex;flex-direction:column;gap:6px;}
+  .kiosk-players li{display:flex;justify-content:space-between;}
+  .kiosk-players .r{color:var(--muted);font-size:16px;}
+  .kiosk-empty{font-size:20px;color:var(--muted);text-align:center;padding:20px 0;}
+  .kiosk-queue{background:var(--panel);border-radius:18px;padding:20px;border:2px solid var(--border);}
+  .kiosk-queue h2{font-size:24px;margin:0 0 12px;color:var(--muted);text-transform:uppercase;}
+  .kiosk-queue-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;font-size:20px;}
+  .kiosk-queue-list li{background:var(--panel2);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;}
+  .kiosk-queue-list li .pos{color:var(--accent);font-weight:800;margin-right:8px;}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:100;}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px;max-width:420px;width:90%;}
+  .modal h3{margin-top:0;}
+  .modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+
+  .print-area{display:none;}
+  @media print{
+    body > *:not(.print-area){display:none !important;}
+    .print-area{display:block !important;position:absolute;top:0;left:0;width:100%;padding:20px;color:#000;background:#fff;}
+    .print-area table{width:100%;border-collapse:collapse;}
+    .print-area th,.print-area td{border:1px solid #999;padding:6px 8px;font-size:12px;color:#000;}
+  }
+  .empty-state{color:var(--muted);font-size:13px;text-align:center;padding:20px 0;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="printArea" class="print-area"></div>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = "https://foouxkyervlxvvyljzae.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvb3V4a3llcnZseHZ2eWxqemFlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMTQ5MDEsImV4cCI6MjEwMjY5MDkwMX0.pSiw9YPfJPU52Z0Lz0i1FuO2MiAmVLo4gkbjY-k2xdA";
+const SESSION_ROW_ID = "00000000-0000-0000-0000-000000000001";
+let supabase = null;
+try{ supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }catch(e){ console.error("Supabase init failed", e); }
+
+const STORAGE_KEY = "pickleball-dashboard-v1";
+const uid = () => Math.random().toString(36).slice(2,10);
+
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function defaultSettings(){
+  return { numCourts: 6, gameMinutes: 30, endingSoonMinutes: 2, playersPerCourt: 4, skillMode: "off" };
+}
+
+function defaultState(){
+  const s = defaultSettings();
+  return {
+    players: {},
+    queueIds: [],
+    courts: Array.from({length: s.numCourts}, (_,i)=>({
+      id: uid(), label: "Court "+(i+1), playerIds: [], status: "open", startTime: null, endTime: null,
+    })),
+    outIds: [],
+    settings: s,
+    sessionStart: Date.now(),
+  };
+}
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    if(!parsed.players || !parsed.courts) return defaultState();
+    return parsed;
+  }catch(e){ return defaultState(); }
+}
+
+function fmtClock(ms){
+  if(ms==null) return "--:--";
+  const neg = ms < 0;
+  const s = Math.floor(Math.abs(ms)/1000);
+  const m = Math.floor(s/60);
+  const sec = s%60;
+  return (neg?"-":"")+String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+}
+function fmtTime(ts){
+  if(!ts) return "";
+  return new Date(ts).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+}
+function fmtWait(ms){
+  const m = Math.floor(ms/60000);
+  if(m < 1) return "just now";
+  if(m < 60) return m+"m";
+  return Math.floor(m/60)+"h "+(m%60)+"m";
+}
+
+function courtStatusClass(court, settings, now){
+  if(court.status !== "playing") return "open";
+  const remain = court.endTime - now;
+  if(remain <= 0) return "timeup";
+  if(remain <= settings.endingSoonMinutes*60000) return "ending";
+  return "playing";
+}
+
+function pickNextGroup(queueIds, players, count, skillMode){
+  if(queueIds.length < count) return null;
+  if(skillMode !== "balance"){
+    return { chosen: queueIds.slice(0,count), rest: queueIds.slice(count) };
+  }
+  const anchorId = queueIds[0];
+  const anchor = players[anchorId];
+  const remaining = queueIds.slice(1);
+  const scored = remaining.map((id, idx) => ({ id, idx, diff: Math.abs((players[id].rating||0) - (anchor.rating||0)) }));
+  scored.sort((a,b) => (a.diff - b.diff) || (a.idx - b.idx));
+  const picks = scored.slice(0, count-1).map(s=>s.id);
+  const chosen = [anchorId, ...picks];
+  const rest = queueIds.filter(id => !chosen.includes(id));
+  return { chosen, rest };
+}
+
+// ---------------- App state / controller ----------------
+let state = loadState();
+let view = "organizer";
+let saveStatus = "saved";
+let showResetModal = false;
+let showPrintArea = false;
+let saveTimer = null;
+let dragData = null;
+const alertedCourts = new Set();
+let cloudStatus = "connecting"; // connecting | synced | offline
+let lastPushedJSON = null;
+let applyingRemote = false;
+
+const root = document.getElementById("root");
+const printArea = document.getElementById("printArea");
+
+function persist(){
+  saveStatus = "saving";
+  updateSaveIndicatorText();
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    saveStatus = "saved";
+    updateSaveIndicatorText();
+    if(!applyingRemote) pushToSupabase();
+  }, 400);
+}
+function updateSaveIndicatorText(){
+  const el = document.getElementById("saveIndicator");
+  if(el){
+    const cloudLabel = cloudStatus==="connecting" ? " · connecting…" : cloudStatus==="synced" ? " · cloud synced" : " · offline (local only)";
+    el.textContent = (saveStatus==="saving" ? "Saving…" : "Saved") + cloudLabel;
+    el.className = "save-indicator"+(saveStatus==="saved"?" saved":"");
+  }
+}
+
+async function pushToSupabase(){
+  if(!supabase) return;
+  const json = JSON.stringify(state);
+  if(json === lastPushedJSON) return;
+  try{
+    const { error } = await supabase.from("pickleball_sessions")
+      .update({ state })
+      .eq("id", SESSION_ROW_ID);
+    if(error) throw error;
+    lastPushedJSON = json;
+    cloudStatus = "synced";
+  }catch(e){
+    console.error("Supabase push failed", e);
+    cloudStatus = "offline";
+  }
+  updateSaveIndicatorText();
+}
+
+function applyRemoteState(remoteState){
+  if(!remoteState || typeof remoteState !== "object" || !remoteState.players || !remoteState.courts) return;
+  const json = JSON.stringify(remoteState);
+  if(json === lastPushedJSON) return; // echo of our own write
+  applyingRemote = true;
+  state = remoteState;
+  lastPushedJSON = json;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  cloudStatus = "synced";
+  render();
+  applyingRemote = false;
+}
+
+async function initCloudSync(){
+  if(!supabase){ cloudStatus = "offline"; updateSaveIndicatorText(); return; }
+  try{
+    const { data, error } = await supabase.from("pickleball_sessions")
+      .select("state, updated_at").eq("id", SESSION_ROW_ID).single();
+    if(error) throw error;
+    const remoteState = data && data.state;
+    const remoteHasData = remoteState && remoteState.players && Object.keys(remoteState.players).length>0;
+    const localHasData = Object.keys(state.players).length>0;
+    if(remoteHasData && !localHasData){
+      applyRemoteState(remoteState);
+    } else {
+      // seed/overwrite cloud with local state (first run, or local is ahead)
+      lastPushedJSON = null;
+      await pushToSupabase();
+    }
+    cloudStatus = "synced";
+    updateSaveIndicatorText();
+
+    supabase.channel("pickleball_sessions_changes")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "pickleball_sessions", filter: `id=eq.${SESSION_ROW_ID}` },
+        (payload)=>{ applyRemoteState(payload.new && payload.new.state); })
+      .subscribe((status)=>{
+        if(status === "CHANNEL_ERROR" || status === "TIMED_OUT"){ cloudStatus = "offline"; updateSaveIndicatorText(); }
+      });
+  }catch(e){
+    console.error("Supabase init failed", e);
+    cloudStatus = "offline";
+    updateSaveIndicatorText();
+  }
+}
+
+function autoFill(draft){
+  const per = draft.settings.playersPerCourt;
+  let changed = true, guard = 0;
+  while(changed && guard < 20){
+    changed = false; guard++;
+    for(const court of draft.courts){
+      if(court.status === "open"){
+        const group = pickNextGroup(draft.queueIds, draft.players, per, draft.settings.skillMode);
+        if(group){
+          court.playerIds = group.chosen;
+          court.status = "playing";
+          court.startTime = Date.now();
+          court.endTime = Date.now() + draft.settings.gameMinutes*60000;
+          draft.queueIds = group.rest;
+          changed = true;
+        }
+      }
+    }
+  }
+}
+
+function update(fn){
+  fn(state);
+  autoFill(state);
+  persist();
+  render();
+}
+
+// ---- actions ----
+function checkIn(name, rating){
+  if(!name || !name.trim()) return;
+  update(draft=>{
+    const id = uid();
+    draft.players[id] = { id, name: name.trim(), rating: Number(rating)||0, arrivalTime: Date.now(), gamesPlayed: 0, checkedIn: true };
+    draft.queueIds.push(id);
+  });
+}
+function checkOut(playerId){
+  update(draft=>{
+    draft.queueIds = draft.queueIds.filter(id=>id!==playerId);
+    draft.courts.forEach(c=>{ c.playerIds = c.playerIds.filter(id=>id!==playerId); });
+    if(draft.players[playerId]) draft.players[playerId].checkedIn = false;
+    if(!draft.outIds.includes(playerId)) draft.outIds.push(playerId);
+  });
+}
+function endGame(courtId){
+  update(draft=>{
+    const court = draft.courts.find(c=>c.id===courtId);
+    if(!court || court.status!=="playing") return;
+    court.playerIds.forEach(pid=>{
+      if(draft.players[pid]){
+        draft.players[pid].gamesPlayed += 1;
+        if(draft.players[pid].checkedIn) draft.queueIds.push(pid);
+      }
+    });
+    court.playerIds = []; court.status = "open"; court.startTime = null; court.endTime = null;
+  });
+}
+function openCourtManually(courtId){
+  update(draft=>{
+    const court = draft.courts.find(c=>c.id===courtId);
+    if(!court) return;
+    court.playerIds.forEach(pid=>{ if(draft.players[pid] && draft.players[pid].checkedIn) draft.queueIds.push(pid); });
+    court.playerIds = []; court.status="open"; court.startTime=null; court.endTime=null;
+  });
+}
+function startCourtManually(courtId){
+  update(draft=>{
+    const court = draft.courts.find(c=>c.id===courtId);
+    if(!court || court.playerIds.length===0) return;
+    court.status = "playing"; court.startTime = Date.now(); court.endTime = Date.now() + draft.settings.gameMinutes*60000;
+  });
+}
+function updateSettings(patch){
+  update(draft=>{
+    draft.settings = Object.assign({}, draft.settings, patch);
+    if(patch.numCourts != null){
+      const n = Math.max(1, Math.min(20, patch.numCourts));
+      const cur = draft.courts.length;
+      if(n > cur){
+        for(let i=cur;i<n;i++) draft.courts.push({id: uid(), label: "Court "+(i+1), playerIds:[], status:"open", startTime:null, endTime:null});
+      } else if(n < cur){
+        const removed = draft.courts.splice(n);
+        removed.forEach(c=>{ c.playerIds.forEach(pid=>{ if(draft.players[pid]&&draft.players[pid].checkedIn) draft.queueIds.push(pid); }); });
+      }
+      draft.settings.numCourts = n;
+    }
+  });
+}
+function resetAll(){
+  localStorage.removeItem(STORAGE_KEY);
+  state = defaultState();
+  showResetModal = false;
+  lastPushedJSON = null;
+  pushToSupabase();
+  render();
+}
+
+function moveToQueue(playerId, fromType, fromCourtId, insertIndex){
+  update(draft=>{
+    if(fromType==="queue"){ draft.queueIds = draft.queueIds.filter(id=>id!==playerId); }
+    else if(fromType==="court"){ const c = draft.courts.find(c=>c.id===fromCourtId); if(c) c.playerIds = c.playerIds.filter(id=>id!==playerId); }
+    let insertAt = insertIndex==null ? draft.queueIds.length : insertIndex;
+    insertAt = Math.max(0, Math.min(insertAt, draft.queueIds.length));
+    draft.queueIds.splice(insertAt, 0, playerId);
+  });
+}
+function moveToCourt(playerId, fromType, fromCourtId, targetCourtId){
+  update(draft=>{
+    const court = draft.courts.find(c=>c.id===targetCourtId);
+    if(!court) return;
+    const sameCourtNoop = fromType==="court" && fromCourtId===targetCourtId;
+    if(court.playerIds.length >= draft.settings.playersPerCourt && !sameCourtNoop) return;
+    if(fromType==="queue"){ draft.queueIds = draft.queueIds.filter(id=>id!==playerId); }
+    else if(fromType==="court"){ const c = draft.courts.find(c=>c.id===fromCourtId); if(c) c.playerIds = c.playerIds.filter(id=>id!==playerId); }
+    if(!court.playerIds.includes(playerId) && court.playerIds.length < draft.settings.playersPerCourt) court.playerIds.push(playerId);
+  });
+}
+
+function exportCSV(){
+  const allPlayersArr = Object.values(state.players).sort((a,b)=>b.gamesPlayed-a.gamesPlayed || a.name.localeCompare(b.name));
+  const rows = [["Name","Rating","Arrival Time","Games Played","Status"]];
+  allPlayersArr.forEach(p=>{
+    const status = p.checkedIn ? (state.courts.some(c=>c.playerIds.includes(p.id)) ? "On Court" : "Waiting") : "Checked Out";
+    rows.push([p.name, p.rating, fmtTime(p.arrivalTime), p.gamesPlayed, status]);
+  });
+  const totalGamesPlayed = allPlayersArr.reduce((s,p)=>s+p.gamesPlayed,0);
+  rows.push([]);
+  rows.push(["Session Totals"]);
+  rows.push(["Total Games Played (sum across players)", totalGamesPlayed]);
+  rows.push(["Total Checked-in Players", allPlayersArr.length]);
+  const csv = rows.map(r=>r.map(v=>{
+    const s = String(v==null?"":v);
+    return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(",")).join("\n");
+  const blob = new Blob([csv], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "pickleball-session-"+new Date().toISOString().slice(0,10)+".csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ---------------- Rendering ----------------
+function render(){
+  document.body.classList.toggle("printing", showPrintArea);
+  root.innerHTML = renderHeader() + (view==="organizer" ? renderOrganizer() : renderKiosk()) + renderResetModal();
+  printArea.innerHTML = showPrintArea ? renderPrintArea() : "";
+  tickTimers();
+}
+
+function renderHeader(){
+  return `
+  <div class="app">
+  <header class="topbar">
+    <div class="title-block">
+      <h1>🏓 Pickleball Open Play Dashboard</h1>
+      <span id="saveIndicator" class="save-indicator${saveStatus==="saved"?" saved":""}">${saveStatus==="saving"?"Saving…":"Saved"}</span>
+    </div>
+    <div class="topbar-actions">
+      <div class="view-toggle">
+        <button data-action="view" data-view="organizer" class="${view==="organizer"?"active":""}">Organizer</button>
+        <button data-action="view" data-view="kiosk" class="${view==="kiosk"?"active":""}">Kiosk / TV</button>
+      </div>
+      <button class="btn icon" title="Export CSV" data-action="export-csv">⬇️</button>
+      <button class="btn icon" title="Print Summary" data-action="print">🖨️</button>
+      <button class="btn danger" data-action="open-reset">Reset Day</button>
+    </div>
+  </header>
+  ${view==="organizer" ? renderOrganizerMain() : renderKioskMain()}
+  </div>`;
+}
+
+function renderOrganizer(){ return ""; }
+function renderKiosk(){ return ""; }
+
+function renderOrganizerMain(){
+  const allPlayersArr = Object.values(state.players).sort((a,b)=>b.gamesPlayed-a.gamesPlayed || a.name.localeCompare(b.name));
+  const activeCount = allPlayersArr.filter(p=>p.checkedIn).length;
+  const queuedPlayers = state.queueIds.map(id=>state.players[id]).filter(Boolean);
+  const now = Date.now();
+
+  const courtsHtml = state.courts.map(court=>renderCourtCard(court, now)).join("");
+
+  const rosterRows = allPlayersArr.length===0 ? `<div class="empty-state">No players checked in yet.</div>` : `
+    <div style="max-height:280px;overflow-y:auto;">
+    <table class="roster">
+      <thead><tr><th>Name</th><th>Rating</th><th>Arrival</th><th>Games</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        ${allPlayersArr.map(p=>{
+          const onCourt = state.courts.find(c=>c.playerIds.includes(p.id));
+          const inQueue = state.queueIds.includes(p.id);
+          let statusHtml;
+          if(!p.checkedIn) statusHtml = `<span class="badge">Checked out</span>`;
+          else if(onCourt) statusHtml = `<span class="badge court">On ${esc(onCourt.label)}</span>`;
+          else if(inQueue) statusHtml = `<span class="badge queue">Waiting</span>`;
+          else statusHtml = `<span class="badge">Idle</span>`;
+          return `<tr>
+            <td>${esc(p.name)}</td><td>${p.rating.toFixed(1)}</td><td>${fmtTime(p.arrivalTime)}</td><td>${p.gamesPlayed}</td>
+            <td>${statusHtml}</td>
+            <td>${p.checkedIn ? `<button class="btn small" data-action="check-out" data-player="${p.id}">Check out</button>` : ""}</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+    </div>`;
+
+  const queueHtml = queuedPlayers.length===0 ? `<li class="empty-state">Queue is empty.</li>` :
+    queuedPlayers.map((p,idx)=>`
+      <li class="queue-item" draggable="true" data-drag-type="queue" data-player="${p.id}" data-drop-queue-index="${idx}">
+        <span class="pos">${idx+1}</span>
+        <span class="name">${esc(p.name)}</span>
+        <span class="rating">${p.rating.toFixed(1)}</span>
+        <span class="wait" data-wait-for="${p.id}" data-arrival="${p.arrivalTime}">waiting ${fmtWait(now-p.arrivalTime)}</span>
+      </li>`).join("");
+
+  const settings = state.settings;
+
+  return `
+  <main>
+    <div class="org-grid">
+      <div style="display:flex;flex-direction:column;gap:18px;">
+        <div class="panel">
+          <h2>Courts (${state.courts.length})</h2>
+          <div class="courts-grid">${courtsHtml}</div>
+        </div>
+        <div class="panel">
+          <h2>All Players (${allPlayersArr.length}) — ${activeCount} checked in</h2>
+          ${rosterRows}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px;">
+        <div class="panel">
+          <h2>Check In Player</h2>
+          <div class="checkin-form">
+            <input id="checkinName" placeholder="Player name" />
+            <div class="row">
+              <select id="checkinRating">
+                ${["2.0","2.5","3.0","3.5","4.0","4.5","5.0","5.5"].map(r=>`<option value="${r}" ${r==="3.5"?"selected":""}>${r} rating</option>`).join("")}
+              </select>
+              <button class="btn primary" data-action="check-in">Check In</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Waitlist Queue (${queuedPlayers.length})</h2>
+          <ul class="queue-list" data-drop-queue="end">${queueHtml}</ul>
+        </div>
+        <div class="panel">
+          <h2>Settings</h2>
+          <div class="settings-grid">
+            <label>Number of courts
+              <input type="number" min="1" max="20" value="${settings.numCourts}" data-setting="numCourts" />
+            </label>
+            <label>Game length (minutes)
+              <input type="number" min="1" max="60" value="${settings.gameMinutes}" data-setting="gameMinutes" />
+            </label>
+            <label>"Ending soon" warning (minutes left)
+              <input type="number" min="0" max="30" value="${settings.endingSoonMinutes}" data-setting="endingSoonMinutes" />
+            </label>
+            <label>Players per court
+              <input type="number" min="2" max="4" step="2" value="${settings.playersPerCourt}" data-setting="playersPerCourt" />
+            </label>
+            <label>Skill matching
+              <div class="toggle-row">
+                <button data-action="skill-mode" data-mode="off" class="${settings.skillMode==="off"?"active":""}">Fairness only</button>
+                <button data-action="skill-mode" data-mode="balance" class="${settings.skillMode==="balance"?"active":""}">Group similar</button>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>`;
+}
+
+function renderCourtCard(court, now){
+  const cls = courtStatusClass(court, state.settings, now);
+  const remain = court.status==="playing" ? court.endTime - now : null;
+  const pillLabel = court.status==="open" ? "Open" : cls==="timeup" ? "Time up!" : cls==="ending" ? "Ending soon" : "In progress";
+  const pillCls = court.status==="open" ? "open" : (cls==="playing" ? "playing" : "ending");
+  const playersHtml = court.playerIds.map(pid=>{
+    const p = state.players[pid];
+    if(!p) return "";
+    return `<li class="player-chip" draggable="true" data-drag-type="court" data-court="${court.id}" data-player="${p.id}">
+      <span>${esc(p.name)}</span><span class="rating">${p.rating.toFixed(1)}</span>
+    </li>`;
+  }).join("");
+  const emptySlots = Math.max(0, state.settings.playersPerCourt - court.playerIds.length);
+  const emptyHtml = Array.from({length:emptySlots}).map(()=>`<li class="court-slot-empty">drop player here</li>`).join("");
+
+  return `
+  <div class="court-card ${cls}" data-court-card="${court.id}" data-drop-court="${court.id}">
+    <div class="court-head">
+      <span class="court-name">${esc(court.label)}</span>
+      <span class="status-pill ${pillCls}" data-court-pill="${court.id}">${pillLabel}</span>
+    </div>
+    ${court.status==="playing" ? `<div class="court-timer" data-timer-for="${court.id}" data-end="${court.endTime}">${fmtClock(remain)}</div>` : ""}
+    <ul class="court-players">${playersHtml}${emptyHtml}</ul>
+    <div class="court-actions">
+      ${court.status==="playing"
+        ? `<button class="btn small" data-action="end-game" data-court="${court.id}">End Game</button>`
+        : `<button class="btn small" ${court.playerIds.length===0?"disabled":""} data-action="start-game" data-court="${court.id}">Start Game</button>`}
+      ${court.playerIds.length>0 ? `<button class="btn small" data-action="open-court" data-court="${court.id}">Clear</button>` : ""}
+    </div>
+  </div>`;
+}
+
+function renderKioskMain(){
+  const now = Date.now();
+  const queuedPlayers = state.queueIds.map(id=>state.players[id]).filter(Boolean);
+  const courtsHtml = state.courts.map(court=>{
+    const cls = courtStatusClass(court, state.settings, now);
+    const remain = court.status==="playing" ? court.endTime - now : null;
+    const statusLabel = court.status==="open" ? "Open" : cls==="timeup" ? "TIME'S UP" : cls==="ending" ? "Ending soon" : "In progress";
+    const playersHtml = court.playerIds.length>0 ? `<ul class="kiosk-players">${court.playerIds.map(pid=>{
+        const p = state.players[pid]; if(!p) return "";
+        return `<li><span>${esc(p.name)}</span><span class="r">${p.rating.toFixed(1)}</span></li>`;
+      }).join("")}</ul>` : `<div class="kiosk-empty">Court open</div>`;
+    return `<div class="kiosk-court ${cls}" data-court-card="${court.id}">
+      <h3>${esc(court.label)}</h3>
+      <div class="kiosk-status" data-court-pill="${court.id}">${statusLabel}</div>
+      ${court.status==="playing" ? `<div class="kiosk-timer" data-timer-for="${court.id}" data-end="${court.endTime}">${fmtClock(remain)}</div>` : ""}
+      ${playersHtml}
+    </div>`;
+  }).join("");
+
+  const queueHtml = queuedPlayers.length===0 ? `<div class="kiosk-empty">No one waiting</div>` :
+    `<ul class="kiosk-queue-list">${queuedPlayers.map((p,idx)=>`
+      <li><span><span class="pos">${idx+1}</span>${esc(p.name)}</span><span class="r">${p.rating.toFixed(1)}</span></li>`).join("")}</ul>`;
+
+  return `
+  <div class="kiosk">
+    <div class="kiosk-courts">${courtsHtml}</div>
+    <div class="kiosk-queue">
+      <h2>Waitlist (${queuedPlayers.length})</h2>
+      ${queueHtml}
+    </div>
+  </div>`;
+}
+
+function renderResetModal(){
+  if(!showResetModal) return "";
+  return `
+  <div class="modal-backdrop" data-action="close-reset-backdrop">
+    <div class="modal" data-stop-close="1">
+      <h3>Reset the whole session?</h3>
+      <p style="color:var(--muted);font-size:14px;">This clears all players, courts, queue, and stats to start a fresh open-play day. This cannot be undone.</p>
+      <div class="actions">
+        <button class="btn" data-action="close-reset">Cancel</button>
+        <button class="btn danger" data-action="confirm-reset">Yes, reset everything</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderPrintArea(){
+  const allPlayersArr = Object.values(state.players).sort((a,b)=>b.gamesPlayed-a.gamesPlayed || a.name.localeCompare(b.name));
+  const totalGames = allPlayersArr.reduce((s,p)=>s+p.gamesPlayed,0);
+  const mostActive = [...allPlayersArr].sort((a,b)=>b.gamesPlayed-a.gamesPlayed).slice(0,5);
+  return `
+    <h2 style="margin-top:0;">Pickleball Open Play — Session Summary</h2>
+    <p>Date: ${new Date(state.sessionStart).toLocaleDateString()}</p>
+    <p><strong>Total games played (sum across players):</strong> ${totalGames}</p>
+    <p><strong>Players checked in:</strong> ${allPlayersArr.length}</p>
+    <h3>Most Active Players</h3>
+    <ol>${mostActive.map(p=>`<li>${esc(p.name)} — ${p.gamesPlayed} games</li>`).join("")}</ol>
+    <h3>Full Roster</h3>
+    <table>
+      <thead><tr><th>Name</th><th>Rating</th><th>Arrival</th><th>Games Played</th></tr></thead>
+      <tbody>${allPlayersArr.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.rating.toFixed(1)}</td><td>${fmtTime(p.arrivalTime)}</td><td>${p.gamesPlayed}</td></tr>`).join("")}</tbody>
+    </table>`;
+}
+
+// lightweight per-second update: timers + wait times + status classes, no full re-render
+function tickTimers(){
+  const now = Date.now();
+  document.querySelectorAll("[data-timer-for]").forEach(el=>{
+    const end = Number(el.getAttribute("data-end"));
+    el.textContent = fmtClock(end-now);
+  });
+  document.querySelectorAll("[data-wait-for]").forEach(el=>{
+    const arrival = Number(el.getAttribute("data-arrival"));
+    el.textContent = "waiting "+fmtWait(now-arrival);
+  });
+  state.courts.forEach(court=>{
+    const cls = courtStatusClass(court, state.settings, now);
+    document.querySelectorAll(`[data-court-card="${court.id}"]`).forEach(el=>{
+      el.classList.remove("open","playing","ending","timeup");
+      el.classList.add(cls);
+    });
+    document.querySelectorAll(`[data-court-pill="${court.id}"]`).forEach(el=>{
+      const label = court.status==="open" ? "Open" : cls==="timeup" ? (el.classList.contains("kiosk-status")?"TIME'S UP":"Time up!") : cls==="ending" ? "Ending soon" : "In progress";
+      el.textContent = label;
+      el.classList.remove("open","playing","ending");
+      el.classList.add(court.status==="open"?"open":(cls==="playing"?"playing":"ending"));
+    });
+    if(court.status==="playing" && court.endTime <= now){
+      if(!alertedCourts.has(court.id)){
+        alertedCourts.add(court.id);
+        beep();
+      }
+    } else {
+      alertedCourts.delete(court.id);
+    }
+  });
+}
+
+function beep(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880; g.gain.value = 0.15;
+    o.start(); setTimeout(()=>{ o.stop(); ctx.close(); }, 350);
+  }catch(e){}
+}
+
+// ---------------- Event delegation ----------------
+document.addEventListener("click", (e)=>{
+  const t = e.target;
+  const actionEl = t.closest("[data-action]");
+  if(actionEl){
+    const action = actionEl.getAttribute("data-action");
+    switch(action){
+      case "view": view = actionEl.getAttribute("data-view"); render(); break;
+      case "export-csv": exportCSV(); break;
+      case "print":
+        showPrintArea = true; render();
+        setTimeout(()=>{ window.print(); showPrintArea=false; render(); }, 150);
+        break;
+      case "open-reset": showResetModal = true; render(); break;
+      case "close-reset": showResetModal = false; render(); break;
+      case "close-reset-backdrop": if(t===actionEl) { showResetModal = false; render(); } break;
+      case "confirm-reset": resetAll(); break;
+      case "check-in": {
+        const nameEl = document.getElementById("checkinName");
+        const ratingEl = document.getElementById("checkinRating");
+        checkIn(nameEl.value, ratingEl.value);
+        break;
+      }
+      case "check-out": checkOut(actionEl.getAttribute("data-player")); break;
+      case "end-game": endGame(actionEl.getAttribute("data-court")); break;
+      case "open-court": openCourtManually(actionEl.getAttribute("data-court")); break;
+      case "start-game": startCourtManually(actionEl.getAttribute("data-court")); break;
+      case "skill-mode": updateSettings({skillMode: actionEl.getAttribute("data-mode")}); break;
+    }
+    return;
+  }
+  // click on modal backdrop itself (not inner modal)
+  if(t.classList && t.classList.contains("modal-backdrop")){
+    showResetModal = false; render();
+  }
+});
+
+document.addEventListener("keydown", (e)=>{
+  if(e.target && e.target.id === "checkinName" && e.key === "Enter"){
+    const nameEl = document.getElementById("checkinName");
+    const ratingEl = document.getElementById("checkinRating");
+    checkIn(nameEl.value, ratingEl.value);
+  }
+});
+
+document.addEventListener("change", (e)=>{
+  const t = e.target;
+  if(t.matches && t.matches("[data-setting]")){
+    const field = t.getAttribute("data-setting");
+    const val = Number(t.value);
+    if(!Number.isNaN(val)) updateSettings({[field]: val});
+  }
+});
+
+// Drag and drop
+document.addEventListener("dragstart", (e)=>{
+  const el = e.target.closest("[data-drag-type]");
+  if(!el) return;
+  dragData = {
+    playerId: el.getAttribute("data-player"),
+    fromType: el.getAttribute("data-drag-type"),
+    fromCourtId: el.getAttribute("data-court") || null,
+  };
+  e.dataTransfer.effectAllowed = "move";
+  try{ e.dataTransfer.setData("text/plain", dragData.playerId); }catch(err){}
+});
+
+document.addEventListener("dragover", (e)=>{
+  const courtEl = e.target.closest("[data-drop-court]");
+  const queueEl = e.target.closest("[data-drop-queue], [data-drop-queue-index]");
+  if(courtEl || queueEl){
+    e.preventDefault();
+    if(courtEl) courtEl.classList.add("dragover");
+    const qi = e.target.closest("[data-drop-queue-index]");
+    if(qi) qi.classList.add("dragover");
+  }
+});
+document.addEventListener("dragleave", (e)=>{
+  const courtEl = e.target.closest("[data-drop-court]");
+  if(courtEl) courtEl.classList.remove("dragover");
+  const qi = e.target.closest("[data-drop-queue-index]");
+  if(qi) qi.classList.remove("dragover");
+});
+document.addEventListener("drop", (e)=>{
+  if(!dragData) return;
+  const courtEl = e.target.closest("[data-drop-court]");
+  const qi = e.target.closest("[data-drop-queue-index]");
+  const queueListEl = e.target.closest("[data-drop-queue]");
+  e.preventDefault();
+  if(courtEl){
+    moveToCourt(dragData.playerId, dragData.fromType, dragData.fromCourtId, courtEl.getAttribute("data-drop-court"));
+  } else if(qi){
+    moveToQueue(dragData.playerId, dragData.fromType, dragData.fromCourtId, Number(qi.getAttribute("data-drop-queue-index")));
+  } else if(queueListEl){
+    moveToQueue(dragData.playerId, dragData.fromType, dragData.fromCourtId, null);
+  }
+  dragData = null;
+});
+
+// Global 1s tick for timers/wait-times/status colors
+setInterval(tickTimers, 1000);
+
+render();
+initCloudSync();
+</script>
+</body>
+</html>
