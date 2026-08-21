@@ -279,6 +279,7 @@ function migrateState(parsed){
   });
   Object.values(parsed.players||{}).forEach(p=>{
     if(p.lastResult === undefined) p.lastResult = null;
+    if(p.queuedSince === undefined) p.queuedSince = p.arrivalTime;
   });
   return parsed;
 }
@@ -516,7 +517,8 @@ function checkIn(name, rating){
   if(!name || !name.trim()) return;
   update(draft=>{
     const id = uid();
-    draft.players[id] = { id, name: name.trim(), rating: Number(rating)||0, arrivalTime: Date.now(), gamesPlayed: 0, checkedIn: true, lastResult: null };
+    const now = Date.now();
+    draft.players[id] = { id, name: name.trim(), rating: Number(rating)||0, arrivalTime: now, queuedSince: now, gamesPlayed: 0, checkedIn: true, lastResult: null };
     draft.queueIds.push(id);
   });
 }
@@ -536,7 +538,12 @@ function finalizeEndGame(courtId, winnerIds){
     const court = draft.courts.find(c=>c.id===courtId);
     if(!court || court.status!=="playing") return;
     const ids = court.playerIds.slice();
-    ids.forEach(pid=>{ if(draft.players[pid]) draft.players[pid].gamesPlayed += 1; });
+    const now = Date.now();
+    ids.forEach(pid=>{
+      if(!draft.players[pid]) return;
+      draft.players[pid].gamesPlayed += 1;
+      draft.players[pid].queuedSince = now; // wait-timer restarts now that they're free again
+    });
     court.playerIds = []; court.status = "open"; court.startTime = null; court.endTime = null;
 
     if(!winnerIds){
@@ -566,7 +573,11 @@ function openCourtManually(courtId){
   update(draft=>{
     const court = draft.courts.find(c=>c.id===courtId);
     if(!court) return;
-    court.playerIds.forEach(pid=>{ if(draft.players[pid] && draft.players[pid].checkedIn) draft.queueIds.push(pid); });
+    court.playerIds.forEach(pid=>{
+      if(!draft.players[pid] || !draft.players[pid].checkedIn) return;
+      draft.players[pid].queuedSince = Date.now();
+      draft.queueIds.push(pid);
+    });
     court.playerIds = []; court.status="open"; court.startTime=null; court.endTime=null;
   });
 }
@@ -611,7 +622,11 @@ function resetAll(){
 function moveToQueue(playerId, fromType, fromCourtId, insertIndex){
   update(draft=>{
     if(fromType==="queue"){ draft.queueIds = draft.queueIds.filter(id=>id!==playerId); }
-    else if(fromType==="court"){ const c = draft.courts.find(c=>c.id===fromCourtId); if(c) c.playerIds = c.playerIds.filter(id=>id!==playerId); }
+    else if(fromType==="court"){
+      const c = draft.courts.find(c=>c.id===fromCourtId);
+      if(c) c.playerIds = c.playerIds.filter(id=>id!==playerId);
+      if(draft.players[playerId]) draft.players[playerId].queuedSince = Date.now();
+    }
     let insertAt = insertIndex==null ? draft.queueIds.length : insertIndex;
     insertAt = Math.max(0, Math.min(insertAt, draft.queueIds.length));
     draft.queueIds.splice(insertAt, 0, playerId);
@@ -889,7 +904,7 @@ function renderDashboardTab(){
         <span class="pos">${idx+1}</span>
         <span class="name">${p.lastResult==="winner" ? `<span class="result-tag win">W</span>` : p.lastResult==="loser" ? `<span class="result-tag loss">L</span>` : ""}${esc(p.name)}</span>
         <span class="rating">${p.rating.toFixed(1)}</span>
-        <span class="wait" data-wait-for="${p.id}" data-arrival="${p.arrivalTime}">waiting ${fmtWait(now-p.arrivalTime)}</span>
+        <span class="wait" data-wait-for="${p.id}" data-arrival="${p.queuedSince}">waiting ${fmtWait(now-p.queuedSince)}</span>
       </li>`).join("");
 
   const settings = state.settings;
